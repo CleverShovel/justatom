@@ -12,8 +12,23 @@ extend-exclude = [
     ".data"
 ]
 extend-include = ["*.ipynb"]
-extend-select = ["I"]
 
 # Same as Black.
-line-length = 120
+line-length = 88
 indent-width = 4
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+]
