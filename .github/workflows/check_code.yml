@@ -29,8 +29,10 @@ jobs:
         if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with ruff
-      run:
-        ruff check --fix
+      uses: chartboost/ruff-action@v1
+      with:
+        version: 0.5.7
     - name: Test with pytest
+      if: always()
       run: |
         if [ -d tests ]; then pytest tests; fi
