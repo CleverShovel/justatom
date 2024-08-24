@@ -1,39 +1,31 @@
+import asyncio as asio
 import os
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Dict, Iterable, List, Union, Optional, Tuple
 
 import dotenv
 import numpy as np
 import polars as pl
-
-
-from tqdm.auto import tqdm
-from justatom.running.indexer import API as IndexerAPI
 import torch
-import asyncio as asio
 from loguru import logger
-from torch.utils.data import ConcatDataset
-
 from more_itertools import chunked
+from torch.utils.data import ConcatDataset
+from tqdm.auto import tqdm
 
 from justatom.configuring import Config
 
 # Model IO and Prediction Head Flow
-from justatom.modeling.head import ANNHead
 from justatom.modeling.mask import ILanguageModel
-from justatom.processing import IProcessor, ITokenizer, igniset, INFERProcessor
-from justatom.processing.loader import NamedDataLoader
-from justatom.processing.prime import TripletProcessor, ContrastiveProcessor
-from justatom.running.m1 import M1LMRunner
-from justatom.etc.schema import Document
-from justatom.tooling import stl
-from justatom.storing.dataset import API as DatasetApi
-from justatom.storing.weaviate import Finder as WeaviateApi, WeaviateDocStore
-from justatom.running.retriever import API as RetrieverApi
+from justatom.processing import INFERProcessor, ITokenizer
 from justatom.running.evaluator import EvaluatorRunner
-from justatom.running.mask import IRetrieverRunner, IEvaluatorRunner
-from justatom.modeling.mask import ILanguageModel
-from justatom.tooling.stl import merge_in_order
+from justatom.running.indexer import API as IndexerAPI
+from justatom.running.m1 import M1LMRunner
+from justatom.running.mask import IEvaluatorRunner, IRetrieverRunner
+from justatom.running.retriever import API as RetrieverApi
+from justatom.storing.dataset import API as DatasetApi
+from justatom.storing.weaviate import Finder as WeaviateApi
+from justatom.storing.weaviate import WeaviateDocStore
+from justatom.tooling import stl
 
 dotenv.load_dotenv()
 
@@ -50,7 +42,7 @@ def to_numpy(container):
         return container
 
 
-def maybe_cuda_or_mps(devices: List[str] = None):
+def maybe_cuda_or_mps(devices: list[str] = None):
     devices = {"cuda", "mps", "cpu"} if devices is None else set(devices)
     if torch.cuda.is_available() and "cuda" in devices:
         return "cuda:0"
@@ -60,7 +52,7 @@ def maybe_cuda_or_mps(devices: List[str] = None):
         return "cpu"
 
 
-def random_split(ds: ConcatDataset, lengths: List[int]):
+def random_split(ds: ConcatDataset, lengths: list[int]):
     """
     Roughly split a Concatdataset into non-overlapping new datasets of given lengths.
     Samples inside Concatdataset should already be shuffled.
@@ -74,18 +66,17 @@ def random_split(ds: ConcatDataset, lengths: List[int]):
         )
 
     try:
-
         idx_dataset = np.where(np.array(ds.cumulative_sizes) > lengths[0])[0][0]
     except IndexError:
-        raise Exception(
-            "All dataset chunks are being assigned to train set leaving no samples for dev set. "
+        raise Exception(  # noqa: B904
+            "All dataset chunks are being assigned to train set leaving no samples for dev set. "  # noqa: E501
             "Either consider increasing dev_split or setting it to 0.0\n"
             f"Cumulative chunk sizes: {ds.cumulative_sizes}\n"
             f"train/dev split: {lengths}"
         )
 
     assert idx_dataset >= 1, (
-        "Dev_split ratio is too large, there is no data in train set. Please lower split ="
+        "Dev_split ratio is too large, there is no data in train set. Please lower split ="  # noqa: E501
         f" {str(lengths)}"
     )
 
@@ -95,7 +86,7 @@ def random_split(ds: ConcatDataset, lengths: List[int]):
 
 
 def check_and_raise(
-    fpath: Union[str, Path],
+    fpath: str | Path,
     name: str = None,
     allowed_suffixes: Iterable[str] = (".csv"),
 ) -> bool:
@@ -106,7 +97,7 @@ def check_and_raise(
     assert fp.exists(), f"Provided {name} dataset path {str(fp)} does not exsits"
     assert (
         fp.suffix in suffixes
-    ), f"{name} dataset path extension {fp.suffix} is not yet supported. Please provide one of {' | '.join(allowed_suffixes)}"
+    ), f"{name} dataset path extension {fp.suffix} is not yet supported. Please provide one of {' | '.join(allowed_suffixes)}"  # noqa: E501
     return fp
 
 
@@ -120,21 +111,23 @@ def check_store_and_message(store: WeaviateDocStore, delete_if_not_empty: bool):
         collection_name = store._collection_settings.get("class")
         logger.warning(
             f"You're not deleting any documents. \
-            Performing evaluation on old {count_docs} documents per [{collection_name}] collection name."
+            Performing evaluation on old {count_docs} documents per [{collection_name}] collection name."  # noqa: E501
         )
     return store
 
 
 def wrapper_docs_with_queries(
     pl_data: pl.DataFrame, search_field: str, content_field: str, batch_size: int = 128
-) -> List[Dict]:
+) -> list[dict]:
     pl_data = pl_data.group_by(content_field).agg(pl.col(search_field))
     queries, documents = (
         pl_data.select(search_field).to_series().to_list(),
         pl_data.select(content_field).to_series().to_list(),
     )
     docs = []
-    for i, chunk in tqdm(enumerate(chunked(zip(queries, documents), n=batch_size))):
+    for i, chunk in tqdm(  # noqa: B007
+        enumerate(chunked(zip(queries, documents, strict=False), n=batch_size))
+    ):  # noqa: B007, E501
         _the_docs = [{"content": c[1], "meta": {"labels": c[0]}} for c in chunk]
         docs.extend(_the_docs)
     return docs
@@ -154,7 +147,7 @@ def igni_runners(
         ir_runner = RetrieverApi.named(index_by, store=store)
     else:
         if model_name_or_path is None:
-            msg = f"You have specified `index_by`=[{index_by}] but `model_name_or_path` is None."
+            msg = f"You have specified `index_by`=[{index_by}] but `model_name_or_path` is None."  # noqa: E501
             logger.error(msg)
             raise ValueError(msg)
         lm_model = ILanguageModel.load(model_name_or_path)
@@ -179,18 +172,18 @@ def igni_runners(
 async def maybe_index_and_ir(
     collection_name: str,
     pl_data: pl.DataFrame,
-    model_name_or_path: Optional[str] = None,
+    model_name_or_path: str | None = None,
     index_and_eval_by: str = "embedding",
     search_field: str = "query",
     content_field: str = "content",
     query_prefix: str = None,
     content_prefix: str = None,
-    filters: Optional[Dict] = None,
+    filters: dict | None = None,
     batch_size: int = 4,
     top_k: int = 5,
     delete_if_not_empty: bool = False,
-    devices: List[str] = None,
-) -> Tuple[IRetrieverRunner, List[str]]:
+    devices: list[str] = None,
+) -> tuple[IRetrieverRunner, list[str]]:
     delete_if_not_empty = delete_if_not_empty or Config.eval.delete_if_not_empty
     # Here we don't need any model to load. Only `DocumentStore`
     store: WeaviateDocStore = WeaviateApi.find(collection_name)
@@ -223,14 +216,14 @@ async def maybe_index_and_ir(
 
 
 async def main(
-    model_name_or_path: Optional[str] = None,
+    model_name_or_path: str | None = None,
     index_and_eval_by: str = "embedding",
     collection_name: str = None,
     dataset_name_or_path: str = None,
     top_k: int = 20,
-    filters: Optional[Dict] = None,
+    filters: dict | None = None,
     metrics=None,
-    metrics_top_k=["HitRate"],
+    metrics_top_k=["HitRate"],  # noqa: B006
     eval_top_k=None,
     search_field: str = "query",
     content_field: str = "content",
@@ -266,7 +259,7 @@ async def main(
     )
 
     logger.info(
-        f"Indexing stage is completed. Using evaluation per {ir.store.count_documents()}"
+        f"Indexing stage is completed. Using evaluation per {ir.store.count_documents()}"  # noqa: E501
     )
 
     el: IEvaluatorRunner = EvaluatorRunner(ir=ir)
@@ -304,7 +297,7 @@ if __name__ == "__main__":
             main(
                 index_and_eval_by="embedding",
                 filters={"fields": ["query", "content"]},
-                model_name_or_path=str("intfloat/multilingual-e5-base"),
+                model_name_or_path="intfloat/multilingual-e5-base",
                 dataset_name_or_path=str(Path(os.getcwd()) / ".data"),
                 query_prefix="query:",
                 content_prefix="passage:",

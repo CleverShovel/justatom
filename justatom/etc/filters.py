@@ -1,14 +1,14 @@
-from typing import Any, Dict
-
-from dateutil import parser
-from justatom.etc.errors import FilterError
-from pandas import DataFrame
+from typing import Any
 
 import weaviate
+from dateutil import parser
+from pandas import DataFrame
 from weaviate.collections.classes.filters import Filter, FilterReturn
 
+from justatom.etc.errors import FilterError
 
-def convert_filters(filters: Dict[str, Any]) -> FilterReturn:
+
+def convert_filters(filters: dict[str, Any]) -> FilterReturn:
     """
     Convert filters from intuitive format to Weaviate format.
     """
@@ -36,7 +36,7 @@ OPERATOR_INVERSE = {
 }
 
 
-def _invert_condition(filters: Dict[str, Any]) -> Dict[str, Any]:
+def _invert_condition(filters: dict[str, Any]) -> dict[str, Any]:
     """
     Invert condition recursively.
     Weaviate doesn't support NOT filters so we need to invert them ourselves.
@@ -60,7 +60,7 @@ LOGICAL_OPERATORS = {
 }
 
 
-def _parse_logical_condition(condition: Dict[str, Any]) -> FilterReturn:
+def _parse_logical_condition(condition: dict[str, Any]) -> FilterReturn:
     if "operator" not in condition:
         msg = f"'operator' key missing in {condition}"
         raise FilterError(msg)
@@ -111,7 +111,7 @@ def _not_equal(field: str, value: Any) -> FilterReturn:
 
 def _greater_than(field: str, value: Any) -> FilterReturn:
     if value is None:
-        # When the value is None and '>' is used we create a filter that would return a Document
+        # When the value is None and '>' is used we create a filter that would return a Document  # noqa: E501
         # if it has a field set and not set at the same time.
         # This will cause the filter to match no Document.
         # This way we keep the behavior consistent with other Document Stores.
@@ -126,14 +126,16 @@ def _greater_than(field: str, value: Any) -> FilterReturn:
             )
             raise FilterError(msg) from exc
     if type(value) in [list, DataFrame]:
-        msg = f"Filter value can't be of type {type(value)} using operators '>', '>=', '<', '<='"
+        msg = f"Filter value can't be of type {type(value)} using operators '>', '>=', '<', '<='"  # noqa: E501
         raise FilterError(msg)
-    return weaviate.classes.query.Filter.by_property(field).greater_than(_handle_date(value))
+    return weaviate.classes.query.Filter.by_property(field).greater_than(
+        _handle_date(value)
+    )  # noqa: E501
 
 
 def _greater_than_equal(field: str, value: Any) -> FilterReturn:
     if value is None:
-        # When the value is None and '>=' is used we create a filter that would return a Document
+        # When the value is None and '>=' is used we create a filter that would return a Document  # noqa: E501
         # if it has a field set and not set at the same time.
         # This will cause the filter to match no Document.
         # This way we keep the behavior consistent with other Document Stores.
@@ -148,14 +150,16 @@ def _greater_than_equal(field: str, value: Any) -> FilterReturn:
             )
             raise FilterError(msg) from exc
     if type(value) in [list, DataFrame]:
-        msg = f"Filter value can't be of type {type(value)} using operators '>', '>=', '<', '<='"
+        msg = f"Filter value can't be of type {type(value)} using operators '>', '>=', '<', '<='"  # noqa: E501
         raise FilterError(msg)
-    return weaviate.classes.query.Filter.by_property(field).greater_or_equal(_handle_date(value))
+    return weaviate.classes.query.Filter.by_property(field).greater_or_equal(
+        _handle_date(value)
+    )  # noqa: E501
 
 
 def _less_than(field: str, value: Any) -> FilterReturn:
     if value is None:
-        # When the value is None and '<' is used we create a filter that would return a Document
+        # When the value is None and '<' is used we create a filter that would return a Document  # noqa: E501
         # if it has a field set and not set at the same time.
         # This will cause the filter to match no Document.
         # This way we keep the behavior consistent with other Document Stores.
@@ -170,14 +174,16 @@ def _less_than(field: str, value: Any) -> FilterReturn:
             )
             raise FilterError(msg) from exc
     if type(value) in [list, DataFrame]:
-        msg = f"Filter value can't be of type {type(value)} using operators '>', '>=', '<', '<='"
+        msg = f"Filter value can't be of type {type(value)} using operators '>', '>=', '<', '<='"  # noqa: E501
         raise FilterError(msg)
-    return weaviate.classes.query.Filter.by_property(field).less_than(_handle_date(value))
+    return weaviate.classes.query.Filter.by_property(field).less_than(
+        _handle_date(value)
+    )  # noqa: E501
 
 
 def _less_than_equal(field: str, value: Any) -> FilterReturn:
     if value is None:
-        # When the value is None and '<=' is used we create a filter that would return a Document
+        # When the value is None and '<=' is used we create a filter that would return a Document  # noqa: E501
         # if it has a field set and not set at the same time.
         # This will cause the filter to match no Document.
         # This way we keep the behavior consistent with other Document Stores.
@@ -192,9 +198,11 @@ def _less_than_equal(field: str, value: Any) -> FilterReturn:
             )
             raise FilterError(msg) from exc
     if type(value) in [list, DataFrame]:
-        msg = f"Filter value can't be of type {type(value)} using operators '>', '>=', '<', '<='"
+        msg = f"Filter value can't be of type {type(value)} using operators '>', '>=', '<', '<='"  # noqa: E501
         raise FilterError(msg)
-    return weaviate.classes.query.Filter.by_property(field).less_or_equal(_handle_date(value))
+    return weaviate.classes.query.Filter.by_property(field).less_or_equal(
+        _handle_date(value)
+    )  # noqa: E501
 
 
 def _in(field: str, value: Any) -> FilterReturn:
@@ -209,7 +217,9 @@ def _not_in(field: str, value: Any) -> FilterReturn:
     if not isinstance(value, list):
         msg = f"{field}'s value must be a list when using 'in' or 'not in' comparators"
         raise FilterError(msg)
-    operands = [weaviate.classes.query.Filter.by_property(field).not_equal(v) for v in value]
+    operands = [
+        weaviate.classes.query.Filter.by_property(field).not_equal(v) for v in value
+    ]  # noqa: E501
     return Filter.all_of(operands)
 
 
@@ -225,12 +235,12 @@ COMPARISON_OPERATORS = {
 }
 
 
-def _parse_comparison_condition(condition: Dict[str, Any]) -> FilterReturn:
+def _parse_comparison_condition(condition: dict[str, Any]) -> FilterReturn:
     field: str = condition["field"]
 
     if field.startswith("meta."):
         # Documents are flattened otherwise we wouldn't be able to properly query them.
-        # We're forced to flatten because Weaviate doesn't support querying of nested properties
+        # We're forced to flatten because Weaviate doesn't support querying of nested properties  # noqa: E501
         # as of now. If we don't flatten the documents we can't filter them.
         # As time of writing this they have it in their backlog, see:
         # https://github.com/weaviate/weaviate/issues/3694
@@ -254,9 +264,12 @@ def _match_no_document(field: str) -> FilterReturn:
     """
     Returns a filters that will match no Document, this is used to keep the behavior consistent
     between different Document Stores.
-    """
+    """  # noqa: E501
 
-    operands = [weaviate.classes.query.Filter.by_property(field).is_none(val) for val in [False, True]]
+    operands = [
+        weaviate.classes.query.Filter.by_property(field).is_none(val)
+        for val in [False, True]
+    ]  # noqa: E501
     return Filter.all_of(operands)
 
 

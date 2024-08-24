@@ -1,7 +1,9 @@
-from pathlib import Path
 import os
-from loguru import logger
+from pathlib import Path
+
 import pytorch_lightning as L
+from loguru import logger
+
 from justatom.etc import delete_folder
 
 
@@ -15,10 +17,14 @@ class ILTrainer(L.Trainer):
             dirpath = os.path.split(filepath)[0]
             runner = self.model
             # runner have model and heads.
-            save_dir = Path(dirpath) / f"epoch={self.current_epoch}-step={self.global_step}"
+            save_dir = (
+                Path(dirpath) / f"epoch={self.current_epoch}-step={self.global_step}"
+            )  # noqa: E501
             save_dir.mkdir(parents=True, exist_ok=True)
             runner.runner.save(save_dir)
-            logger.info(f"Saving checkpoint epoch={self.current_epoch}-step={self.global_step}")
+            logger.info(
+                f"Saving checkpoint epoch={self.current_epoch}-step={self.global_step}"
+            )  # noqa: E501
 
     def remove_checkpoint(self, filepath):
         if self.is_global_zero:
@@ -26,7 +32,9 @@ class ILTrainer(L.Trainer):
             fp = Path(filepath)
             data_dir = fp.parent / fp.stem
             delete_folder(data_dir)
-            logger.info(f"Removing checkpoint epoch={self.current_epoch}-step={self.global_step}")
+            logger.info(
+                f"Removing checkpoint epoch={self.current_epoch}-step={self.global_step}"  # noqa: E501
+            )  # noqa: E501
 
 
 class ILRunner(L.LightningModule):

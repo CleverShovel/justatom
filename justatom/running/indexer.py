@@ -1,11 +1,10 @@
-from typing import Dict, Generator, List, Optional, Union
+import copy
 
 import torch
 from loguru import logger
 from more_itertools import chunked
 from tqdm.autonotebook import tqdm
-import copy
-from justatom.configuring import Config
+
 from justatom.etc.pattern import singleton
 from justatom.etc.schema import Document
 from justatom.processing import igniset
@@ -19,11 +18,10 @@ from justatom.storing.mask import INNDocStore
 
 
 class NNIndexer(IIndexerRunner):
-
     def __init__(
         self,
         store: INNDocStore,
-        runner: Union[M1LMRunner, M2LMRunner],
+        runner: M1LMRunner | M2LMRunner,
         processor: IProcessor,
         device: str = "cpu",
     ):
@@ -33,14 +31,14 @@ class NNIndexer(IIndexerRunner):
         self.device = device
         if runner.device != device:
             logger.info(
-                f"Callback from {self.__class__.__name__} is fired to move to new device {device}. Old device = {runner.device}"
+                f"Callback from {self.__class__.__name__} is fired to move to new device {device}. Old device = {runner.device}"  # noqa: E501
             )
             self.runner.to(device)
 
     @torch.no_grad()
     async def index(
         self,
-        documents: List[Union[Dict, Document]],
+        documents: list[dict | Document],
         batch_size: int = 1,
         device: str = "cpu",
     ):
@@ -53,13 +51,15 @@ class NNIndexer(IIndexerRunner):
         loader = NamedDataLoader(
             dataset=dataset, tensor_names=tensor_names, batch_size=batch_size
         )
-        for i, (docs, batch) in tqdm(
-            enumerate(zip(chunked(documents_as_dicts, n=batch_size), loader))
+        for i, (docs, batch) in tqdm(  # noqa: B007
+            enumerate(
+                zip(chunked(documents_as_dicts, n=batch_size), loader, strict=False)
+            )  # noqa: E501
         ):
             batches = {k: v.to(self.device) for k, v in batch.items()}
             vectors = self.runner(batch=batches)[0].cpu()
             _docs = copy.deepcopy(docs)
-            for doc, vec in zip(_docs, vectors):
+            for doc, vec in zip(_docs, vectors, strict=False):
                 doc["embedding"] = vec
             self.store.write_documents([Document.from_dict(doc) for doc in _docs])
 
@@ -68,9 +68,7 @@ class KWARGIndexer(IIndexerRunner):
     def __init__(self, store: INNDocStore):
         self.store = store
 
-    async def index(
-        self, documents: List[Union[str, Dict]], batch_size: int = 4, **props
-    ):
+    async def index(self, documents: list[str | dict], batch_size: int = 4, **props):
         for i, chunk in enumerate(
             tqdm(
                 chunked(documents, n=batch_size),
@@ -94,7 +92,7 @@ class ATOMICIndexer(IIndexerRunner):
 
     async def index(
         self,
-        documents: List[Union[Dict, Document]],
+        documents: list[dict | Document],
         batch_size: int = 1,
         device: str = "cpu",
     ):
@@ -103,7 +101,6 @@ class ATOMICIndexer(IIndexerRunner):
 
 @singleton
 class ByName:
-
     def named(self, name: str, **kwargs):
         OPS = ["keywords", "emebedding", "justatom"]
 
@@ -114,7 +111,7 @@ class ByName:
         elif name == "justatom":
             klass = ATOMICIndexer
         else:
-            msg = f"Unknown name=[{name}] to init IIndexerRunner instance. Use one of {','.join(OPS)}"
+            msg = f"Unknown name=[{name}] to init IIndexerRunner instance. Use one of {','.join(OPS)}"  # noqa: E501
             logger.error(msg)
             raise ValueError(msg)
 

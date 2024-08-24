@@ -1,37 +1,35 @@
 import os
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Dict, Iterable, List, Tuple, Union, Optional
 
 import dotenv
 import numpy as np
 import polars as pl
 import pytorch_lightning as L
 import torch
-import torchmetrics as tm
+import wandb
 from loguru import logger
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 from torch.utils.data import ConcatDataset
 from transformers.optimization import Adafactor, AdafactorSchedule
 
-import wandb
 from justatom.configuring import Config
+from justatom.etc.schema import Document
 
 # Model IO and Prediction Head Flow
 from justatom.modeling.head import ANNHead
 from justatom.modeling.mask import ILanguageModel
-from justatom.modeling.prime import E5Model
 from justatom.processing import IProcessor, ITokenizer, igniset
 from justatom.processing.loader import NamedDataLoader
-from justatom.processing.prime import TripletProcessor, ContrastiveProcessor
+from justatom.processing.prime import ContrastiveProcessor, TripletProcessor
 from justatom.running.m1 import M1LMRunner
 from justatom.tooling import stl
-from justatom.etc.schema import Document
 from justatom.tooling.stl import merge_in_order
 
 # Training pipeline
 from justatom.training.core import ILTrainer
-from justatom.training.loss import TripletLoss, ContrastiveLoss
+from justatom.training.loss import ContrastiveLoss, TripletLoss
 
 dotenv.load_dotenv()
 
@@ -57,13 +55,13 @@ def maybe_cuda_or_mps():
 def ignite_processor(loss_name: str, **props):
     MAPPING = {"contrastive": ContrastiveProcessor, "triplet": TripletProcessor}
     if loss_name.lower() not in MAPPING:
-        msg = f"Specified loss {loss_name.upper()} is not available. Use one of the following {','.join(MAPPING.keys())}"
+        msg = f"Specified loss {loss_name.upper()} is not available. Use one of the following {','.join(MAPPING.keys())}"  # noqa: E501
         logger.error(msg)
         raise ValueError(msg)
     return MAPPING.get(loss_name)(**props)
 
 
-def random_split(ds: ConcatDataset, lengths: List[int]):
+def random_split(ds: ConcatDataset, lengths: list[int]):
     """
     Roughly split a Concatdataset into non-overlapping new datasets of given lengths.
     Samples inside Concatdataset should already be shuffled.
@@ -81,15 +79,15 @@ def random_split(ds: ConcatDataset, lengths: List[int]):
 
         idx_dataset = np.where(np.array(ds.cumulative_sizes) > lengths[0])[0][0]
     except IndexError:
-        raise Exception(
-            "All dataset chunks are being assigned to train set leaving no samples for dev set. "
+        raise Exception(  # noqa: B904
+            "All dataset chunks are being assigned to train set leaving no samples for dev set. "  # noqa: E501
             "Either consider increasing dev_split or setting it to 0.0\n"
             f"Cumulative chunk sizes: {ds.cumulative_sizes}\n"
             f"train/dev split: {lengths}"
         )
 
     assert idx_dataset >= 1, (
-        "Dev_split ratio is too large, there is no data in train set. Please lower split ="
+        "Dev_split ratio is too large, there is no data in train set. Please lower split ="  # noqa: E501
         f" {str(lengths)}"
     )
 
@@ -99,7 +97,7 @@ def random_split(ds: ConcatDataset, lengths: List[int]):
 
 
 def check_and_raise(
-    fpath: Union[str, Path],
+    fpath: str | Path,
     name: str = None,
     allowed_suffixes: Iterable[str] = (".csv"),
 ) -> bool:
@@ -110,19 +108,19 @@ def check_and_raise(
     assert fp.exists(), f"Provided {name} dataset path {str(fp)} does not exsits"
     assert (
         fp.suffix in suffixes
-    ), f"{name} dataset path extension {fp.suffix} is not yet supported. Please provide one of {' | '.join(allowed_suffixes)}"
+    ), f"{name} dataset path extension {fp.suffix} is not yet supported. Please provide one of {' | '.join(allowed_suffixes)}"  # noqa: E501
     return True
 
 
 def check_structure_and_raise_with_prepare(
     pl_data: pl.DataFrame,
     processor: IProcessor,
-    search_field: Optional[str] = None,
-    content_field: Optional[str] = None,
-    group_field: Optional[str] = None,
-    prefix_field: Optional[str] = None,
-    prefix_search_field: Optional[str] = None,
-    prefix_content_field: Optional[str] = None,
+    search_field: str | None = None,
+    content_field: str | None = None,
+    group_field: str | None = None,
+    prefix_field: str | None = None,
+    prefix_search_field: str | None = None,
+    prefix_content_field: str | None = None,
 ) -> pl.DataFrame:
     if search_field is not None:
         assert (
@@ -140,12 +138,12 @@ def check_structure_and_raise_with_prepare(
         assert (
             prefix_field in pl_data.columns
         ), f"Prefix field [{prefix_field}] is not present within dataset."
-    js_data: List[Dict] = None
+    js_data: list[dict] = None
     # Make sure that the `processor` has correct type
     if search_field is not None and content_field is not None:
         assert isinstance(
             processor, ContrastiveProcessor
-        ), f"You provided both `search_field`={search_field} and `content_field`={content_field} but processor is of wrong type = [{type(processor)}]"
+        ), f"You provided both `search_field`={search_field} and `content_field`={content_field} but processor is of wrong type = [{type(processor)}]"  # noqa: E501
         # TODO: Return
         if (
             prefix_field is None
@@ -173,7 +171,7 @@ def check_structure_and_raise_with_prepare(
         else:
             assert (
                 prefix_search_field is not None and prefix_content_field is not None
-            ), f"You seem to provide one of `prefix_search_field` or `prefix_content_field` but not both and at the same time, yet `prefix_field` is None"
+            ), "You seem to provide one of `prefix_search_field` or `prefix_content_field` but not both and at the same time, yet `prefix_field` is None"  # noqa: E501
             pl_data = pl_data.select(
                 [search_field, content_field, prefix_search_field, prefix_content_field]
             )
@@ -191,7 +189,7 @@ def check_structure_and_raise_with_prepare(
     elif content_field is not None and group_field is not None:
         assert isinstance(
             processor, TripletProcessor
-        ), f"You provided both `content_field`={content_field} and `group_field`={group_field} but processor is of wrong type = [{type(processor)}]"
+        ), f"You provided both `content_field`={content_field} and `group_field`={group_field} but processor is of wrong type = [{type(processor)}]"  # noqa: E501
         pl_data = (
             pl_data.select([content_field, group_field])
             if prefix_field is None
@@ -209,13 +207,13 @@ def check_structure_and_raise_with_prepare(
         ]
         # TODO: Return
     else:
-        msg = f"You should either set `search_field` and `content_field` or `content_field` and `group_label_field`"
+        msg = "You should either set `search_field` and `content_field` or `content_field` and `group_label_field`"  # noqa: E501
         logger.error(msg)
         raise ValueError(msg)
     return pl_data, js_data
 
 
-def check_and_filter(pl_data: pl.DataFrame, filters: Optional[Dict] = None):
+def check_and_filter(pl_data: pl.DataFrame, filters: dict | None = None):
     if filters is not None:
         fields = filters.get("fields", [])
         for field in fields:
@@ -227,14 +225,14 @@ def check_and_scan(
     filepath,
     allowed_suffixes,
     split_name: str,
-    dtypes: Optional[Dict] = None,
+    dtypes: dict | None = None,
     strict_raise: bool = True,
 ):
     if not check_and_raise(
         filepath, name=split_name, allowed_suffixes=allowed_suffixes
     ):
         if strict_raise:
-            msg = f"Filepath you have set is None. `strict_raise`=True by default. Either turn it off or provide valid path."
+            msg = "Filepath you have set is None. `strict_raise`=True by default. Either turn it off or provide valid path."  # noqa: E501
             logger.error(msg)
             raise ValueError(msg)
         else:
@@ -250,7 +248,7 @@ def check_and_scan(
         pl_view = pl.read_json(fpath)
     else:
         if strict_raise:
-            msg = f"The following filepath {fpath} has unsupported [{fpath.suffix}] suffix"
+            msg = f"The following filepath {fpath} has unsupported [{fpath.suffix}] suffix"  # noqa: E501
             logger.error(msg)
             raise ValueError(msg)
         else:
@@ -260,9 +258,9 @@ def check_and_scan(
 
 def ignite_loaders(
     processor: IProcessor,
-    train_filepath: Union[str, Path],
-    dev_filepath: Union[str, Path] = None,
-    test_filepath: Union[str, Path] = None,
+    train_filepath: str | Path,
+    dev_filepath: str | Path = None,
+    test_filepath: str | Path = None,
     split_ratio: float = None,
     shuffle: bool = True,
     group_field: str = None,  # group
@@ -272,9 +270,9 @@ def ignite_loaders(
     prefix_field: str = None,
     prefix_search_field: str = None,
     prefix_content_field: str = None,
-    filters: Optional[Dict] = None,
-    dtypes: Optional[Dict] = None,
-) -> Tuple[
+    filters: dict | None = None,
+    dtypes: dict | None = None,
+) -> tuple[
     torch.utils.data.DataLoader,
     torch.utils.data.DataLoader,
     torch.utils.data.DataLoader,
@@ -293,7 +291,7 @@ def ignite_loaders(
     )
 
     logger.info(
-        f"TRAINING [1/3] Using {str(train_filepath)} to perform training pipeline loading and converting to PyTorch dataset"
+        f"TRAINING [1/3] Using {str(train_filepath)} to perform training pipeline loading and converting to PyTorch dataset"  # noqa: E501
     )
 
     pl_train_view = check_and_filter(pl_train_view, filters=filters)
@@ -325,7 +323,7 @@ def ignite_loaders(
 
     if pl_dev_view is not None:
         logger.info(
-            f"TRAINING [2/3] Using {str(dev_filepath)} to perform training pipeline loading and converting to PyTorch DEV dataset"
+            f"TRAINING [2/3] Using {str(dev_filepath)} to perform training pipeline loading and converting to PyTorch DEV dataset"  # noqa: E501
         )
         pl_dev_view = check_and_filter(pl_dev_view, dtypes=dtypes)
         pl_dev_view, js_dev_docs = check_structure_and_raise_with_prepare(
@@ -343,13 +341,13 @@ def ignite_loaders(
         )
     else:  # Exception was not raised => perform split by ratio from train
         logger.info(
-            f"TRAINING [2/3] Using SPLIT ration of {str(split_ratio)} to perform training pipeline loading and converting to PyTorch DEV dataset"
+            f"TRAINING [2/3] Using SPLIT ration of {str(split_ratio)} to perform training pipeline loading and converting to PyTorch DEV dataset"  # noqa: E501
         )
         dev_size = int(len(dataset) * split_ratio)
         tra_size = len(dataset) - dev_size
         train_dataset, dev_dataset = random_split(dataset, [tra_size, dev_size])
 
-    # NOTE: Use the same DEV dataset for TEST dataset without splitting if dataset_path is not defined.
+    # NOTE: Use the same DEV dataset for TEST dataset without splitting if dataset_path is not defined.  # noqa: E501
 
     pl_test_view = check_and_scan(
         test_filepath,
@@ -361,7 +359,7 @@ def ignite_loaders(
 
     if pl_test_view is not None:  # Exists and was not None
         logger.info(
-            f"TRAINING [3/3] Using {str(test_filepath)} to perform training pipeline loading and converting to PyTorch TEST dataset"
+            f"TRAINING [3/3] Using {str(test_filepath)} to perform training pipeline loading and converting to PyTorch TEST dataset"  # noqa: E501
         )
         pl_test_view = check_and_filter(pl_dev_view, dtypes=dtypes)
         pl_test_view, js_test_docs = check_structure_and_raise_with_prepare(
@@ -379,7 +377,7 @@ def ignite_loaders(
     else:  # Was NONE
         test_dataset = dev_dataset
         logger.info(
-            f"TRAINING [3/3] Using DEV split to perform training pipeline loading and converting to PyTorch TEST dataset"
+            "TRAINING [3/3] Using DEV split to perform training pipeline loading and converting to PyTorch TEST dataset"  # noqa: E501
         )
 
     # TODO: DRY. Replace boilerplate codes for <name>_fpath checking with one method.
@@ -471,18 +469,18 @@ class ILRunner(L.LightningModule):
 
         return L
 
-    def compute_metrics(self, head, logits, labels, metrics: Dict = None):
+    def compute_metrics(self, head, logits, labels, metrics: dict = None):
         # The `metrics` is supposed yet another mapping metrics.
-        # Maps the returned keys from the head (e.g. loss) to the display name you want them to see.
+        # Maps the returned keys from the head (e.g. loss) to the display name you want them to see.  # noqa: E501
         # For the `TripletLoss` you can add
-        # `[dist_p, dist_n, nonzero_count]` one of those and map them to the nice format in logging.
+        # `[dist_p, dist_n, nonzero_count]` one of those and map them to the nice format in logging.  # noqa: E501
         GRANTED_TRIPLET_METRIC_NAME = dict(
             prec="Precision",
             dist_acc="DistanceAcc",
             dist_sm="DistanceSm",
             rel_dist="RelativeDistance",
         )
-        GRANTED_CONTRASTIVE_METRIC_NAME = dict(top1="HitRate")
+        GRANTED_CONTRASTIVE_METRIC_NAME = dict(top1="HitRate")  # noqa: F841
         metrics = dict()
         response = dict()
         if isinstance(head.loss, TripletLoss):
@@ -508,7 +506,7 @@ class ILRunner(L.LightningModule):
         }
         output = self.runner(xs, average=True)  # num_heads x batch_size x embedding_dim
 
-        for head, logits in zip(self.runner.prediction_heads, output):
+        for head, logits in zip(self.runner.prediction_heads, output, strict=False):
             metrics = self.compute_metrics(head, logits, ys.get(self.label_suffix))
             for _metric, _score in metrics.items():
                 self.log(_metric, _score)
@@ -543,9 +541,9 @@ def main(
     prefix_content_field: str = None,
     shuffle: bool = None,
     model_name_or_path: str = None,
-    model_props: Dict = None,
+    model_props: dict = None,
     loss: str = None,
-    loss_props: Dict = None,
+    loss_props: dict = None,
     batch_size: int = None,
     early_stopping_metric: str = None,
     early_stopping_mode: str = None,
@@ -558,8 +556,8 @@ def main(
     devices: str = None,
     val_check_interval: int = None,
     save_model_path: str = None,
-    opts: Dict = None,
-    dtypes: Optional[Dict] = None,
+    opts: dict = None,
+    dtypes: dict | None = None,
 ):
     max_seq_len = max_seq_len or Config.train.max_seq_len
     index_name = index_name or Config.train.index_name
@@ -579,8 +577,9 @@ def main(
     early_stopping_size = int(early_stopping_size or Config.train.early_stopping.size)
     max_epochs = max_epochs or Config.train.max_epochs
     # Add scaling
-    do_scale, do_scale_unit = do_scale or Config.train.do_scale, int(
-        do_scale_unit or Config.train.do_scale_unit
+    do_scale, do_scale_unit = (
+        do_scale or Config.train.do_scale,
+        int(do_scale_unit or Config.train.do_scale_unit),
     )
     if do_scale is True and not do_scale_unit:
         do_scale_unit = 1.0
@@ -602,8 +601,8 @@ def main(
     snap_name = stl.snapshot(snap_opts)
     snap_model_path = Path(os.getcwd()) / save_model_path / snap_name
     # For now, we only switch between different `margin` aka `loss_props` =>
-    # Hence for every unique `loss_props` we could generate unique path for `EarlyStopping`
-    # TODO: Add other props via general `opts: Dict` => `merge_in_order(opts, loss_props)` =>
+    # Hence for every unique `loss_props` we could generate unique path for `EarlyStopping`  # noqa: E501
+    # TODO: Add other props via general `opts: Dict` => `merge_in_order(opts, loss_props)` =>  # noqa: E501
     # and make snapshot of `opts`
     tokenizer = ITokenizer.from_pretrained(model_name_or_path)
     processor = ignite_processor(loss, tokenizer=tokenizer, max_seq_len=max_seq_len)
@@ -616,7 +615,7 @@ def main(
     )
     pl_runner = ILRunner(runner=runner, loss=None, suffix=["group_ids"])
     logger.info(
-        f'All components (1) [Model {model.__class__.__name__}] (2) [Head(s) "{len(runner.prediction_heads)}" - {runner.prediction_heads[0].__class__.__name__}] (3) Loss {runner.prediction_heads[0].loss}'
+        f'All components (1) [Model {model.__class__.__name__}] (2) [Head(s) "{len(runner.prediction_heads)}" - {runner.prediction_heads[0].__class__.__name__}] (3) Loss {runner.prediction_heads[0].loss}'  # noqa: E501
     )
 
     train_loader, dev_loader, test_loader, tensor_names = ignite_loaders(

@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import List, Optional, Union
 
 import simplejson as json
 import torch
@@ -7,22 +6,20 @@ import torch.nn.functional as F
 from loguru import logger
 
 from justatom.modeling.div import loss_per_head_sum
-
 from justatom.modeling.mask import IHead, ILanguageModel
-from justatom.running.mask import IMODELRunner
 from justatom.processing.mask import IProcessor
+from justatom.running.mask import IMODELRunner
 
 
 class M1LMRunner(IMODELRunner, torch.nn.Module):
-
     def __init__(
         self,
         model: ILanguageModel,
-        prediction_heads: List[IHead],
+        prediction_heads: list[IHead],
         device="cpu",
-        processor: Optional[IProcessor] = None,
+        processor: IProcessor | None = None,
     ):
-        super(M1LMRunner, self).__init__()
+        super(M1LMRunner, self).__init__()  # noqa: UP008
         self.model = model
         self.prediction_heads = prediction_heads or []
         self.device = device
@@ -40,10 +37,10 @@ class M1LMRunner(IMODELRunner, torch.nn.Module):
                 logger.info("Head is not on the same device")
             if mod.loss.device != device:
                 logger.info("Loss on the other device :(")
-        super(M1LMRunner, self).to(device)
+        super(M1LMRunner, self).to(device)  # noqa: UP008
 
     @classmethod
-    def load(cls, data_dir: Union[Path, str], config=None, **props):
+    def load(cls, data_dir: Path | str, config=None, **props):
         # model_config.json supposed to be present in directory
         _model_config = Path(data_dir) / "runner_config.json"
         assert _model_config.exists(), "The model file is not found for `M1Runner`"
@@ -80,12 +77,12 @@ class M1LMRunner(IMODELRunner, torch.nn.Module):
         """
         all_losses = []
         for head, logits_for_one_head, labels_for_one_head in zip(
-            self.prediction_heads, logits, labels
+            self.prediction_heads, logits, labels, strict=False
         ):
             # check if PredictionHead connected to Processor
             assert hasattr(head, "label_tensor_name"), (
-                f"Label_tensor_names are missing inside the {head.task_name} Prediction Head. Did you connect the model"
-                " with the processor through either 'model.connect_heads_with_processor(processor.tasks)'"
+                f"Label_tensor_names are missing inside the {head.task_name} Prediction Head. Did you connect the model"  # noqa: E501
+                " with the processor through either 'model.connect_heads_with_processor(processor.tasks)'"  # noqa: E501
                 " or by passing the processor to the Adaptive Model?"
             )
             all_losses.append(
@@ -96,7 +93,7 @@ class M1LMRunner(IMODELRunner, torch.nn.Module):
         return all_losses
 
     def logits_to_loss(
-        self, logits: torch.Tensor, global_step: Optional[int] = None, **kwargs
+        self, logits: torch.Tensor, global_step: int | None = None, **kwargs
     ):
         """
         Get losses from all prediction heads & reduce to single loss *per sample*.
@@ -106,10 +103,10 @@ class M1LMRunner(IMODELRunner, torch.nn.Module):
         :param kwargs: Placeholder for passing generic parameters.
                        Note: Contains the batch (as dict of tensors), when called from Trainer.train().
         :return: torch.tensor that is the per sample loss (len: batch_size)
-        """
+        """  # noqa: E501
         all_losses = self.logits_to_loss_per_head(logits, **kwargs)
         # This aggregates the loss per sample across multiple prediction heads
-        # Default is sum(), but you can configure any fn that takes [Tensor, Tensor ...] and returns [Tensor]
+        # Default is sum(), but you can configure any fn that takes [Tensor, Tensor ...] and returns [Tensor]  # noqa: E501
         loss = self.loss_aggregation_fn(
             all_losses, global_step=global_step, batch=kwargs
         )

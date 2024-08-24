@@ -1,20 +1,23 @@
-from justatom.storing.mask import IDFDocStore
-import polars as pl
-import numpy as np
-from typing import Union
 import re
+
+import numpy as np
+import polars as pl
+
+from justatom.storing.mask import IDFDocStore
 
 
 class POLARStore(IDFDocStore):
-
-    def __init__(self, df: Union[pl.DataFrame, pl.Series]):
+    def __init__(self, df: pl.DataFrame | pl.Series):
         self.df = df
 
     def counts_per_col(self, col: str, view_as_dict: bool = False):
         df = self.df.with_row_count()
         pl_view = (
             df.with_columns(
-                [pl.count("row_nr").over(col).alias(f"counts_per_{col}"), pl.first("row_nr").over(col).alias("mask")]
+                [
+                    pl.count("row_nr").over(col).alias(f"counts_per_{col}"),
+                    pl.first("row_nr").over(col).alias("mask"),
+                ]  # noqa: E501
             )
             .filter(pl.col("row_nr") == pl.col("mask"))
             .sort(by=f"counts_per_{col}", descending=True)
@@ -24,7 +27,9 @@ class POLARStore(IDFDocStore):
             pl_res = {
                 key_over: key_value
                 for key_over, key_value in zip(
-                    pl_view.select(col).to_series().to_list(), pl_view.select(f"counts_per_{col}").to_series().to_list()
+                    pl_view.select(col).to_series().to_list(),
+                    pl_view.select(f"counts_per_{col}").to_series().to_list(),
+                    strict=False,  # noqa: E501
                 )
             }
         else:
@@ -32,7 +37,6 @@ class POLARStore(IDFDocStore):
         return pl_res
 
     def count_words_per_col(self, col: str, sort=True, stopchars: str = None):
-
         df = self.df
 
         def clear_doc(text):
@@ -98,15 +102,20 @@ class POLARStore(IDFDocStore):
             dtype=pl.Boolean,
         )
 
-    def random_sample(self, method: str = "binomial", sample_size: int = 100, num_obs: int = 1000):
+    def random_sample(
+        self, method: str = "binomial", sample_size: int = 100, num_obs: int = 1000
+    ):  # noqa: E501
         """
         We want to sample the given population size (len(self.df)) taking `num_obs` observations with each
         observaion being `sample_size` size.
-        """
+        """  # noqa: E501
         # [self.df.sample(sample_size) for _ in range(num_obs)]
         # Lazy API. See https://stackoverflow.com/a/76359078/22622408 for more info
         pl_lazy_obs = [
-            self.df.lazy().select(row=pl.struct(pl.all()).sample(sample_size)).unnest("row") for _ in range(num_obs)
+            self.df.lazy()
+            .select(row=pl.struct(pl.all()).sample(sample_size))
+            .unnest("row")
+            for _ in range(num_obs)  # noqa: E501
         ]
 
         return pl.collect_all(pl_lazy_obs)

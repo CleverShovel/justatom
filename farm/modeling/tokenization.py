@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright 2018 deepset team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tokenization classes."""
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import collections
 import json
@@ -24,39 +22,60 @@ from pathlib import Path
 
 import numpy as np
 from transformers import (
-    AlbertTokenizer, AlbertTokenizerFast,
-    BertTokenizer, BertTokenizerFast,
-    DistilBertTokenizer, DistilBertTokenizerFast,
-    ElectraTokenizer, ElectraTokenizerFast,
-    RobertaTokenizer, RobertaTokenizerFast,
-    XLMRobertaTokenizer, XLMRobertaTokenizerFast,
-    XLNetTokenizer, XLNetTokenizerFast,
-    CamembertTokenizer, CamembertTokenizerFast,
-    DPRContextEncoderTokenizer, DPRContextEncoderTokenizerFast,
-    DPRQuestionEncoderTokenizer, DPRQuestionEncoderTokenizerFast,
-    BigBirdTokenizer, BigBirdTokenizerFast
+    AlbertTokenizer,
+    AlbertTokenizerFast,
+    AutoConfig,
+    BertTokenizer,
+    BertTokenizerFast,
+    BigBirdTokenizer,
+    BigBirdTokenizerFast,
+    CamembertTokenizer,
+    CamembertTokenizerFast,
+    DistilBertTokenizer,
+    DistilBertTokenizerFast,
+    DPRContextEncoderTokenizer,
+    DPRContextEncoderTokenizerFast,
+    DPRQuestionEncoderTokenizer,
+    DPRQuestionEncoderTokenizerFast,
+    ElectraTokenizer,
+    ElectraTokenizerFast,
+    RobertaTokenizer,
+    RobertaTokenizerFast,
+    XLMRobertaTokenizer,
+    XLMRobertaTokenizerFast,
+    XLNetTokenizer,
+    XLNetTokenizerFast,
 )
 from transformers.models.bert.tokenization_bert import load_vocab
 from transformers.tokenization_utils import PreTrainedTokenizer
-from transformers import AutoConfig
-
 
 from farm.data_handler.samples import SampleBasket
-from farm.modeling.wordembedding_utils import load_from_cache, EMBEDDING_VOCAB_FILES_MAP, run_split_on_punc
+from farm.modeling.wordembedding_utils import (
+    EMBEDDING_VOCAB_FILES_MAP,
+    load_from_cache,
+    run_split_on_punc,
+)
 
 logger = logging.getLogger(__name__)
 
-# Special characters used by the different tokenizers to indicate start of word / whitespace
+# Special characters used by the different tokenizers to indicate start of word / whitespace  # noqa: E501
 SPECIAL_TOKENIZER_CHARS = r"^(##|Ġ|▁)"
 
 
 class Tokenizer:
     """
     Simple Wrapper for Tokenizers from the transformers package. Enables loading of different Tokenizer classes with a uniform interface.
-    """
+    """  # noqa: E501
 
     @classmethod
-    def load(cls, pretrained_model_name_or_path, revision=None, tokenizer_class=None, use_fast=True, **kwargs):
+    def load(
+        cls,
+        pretrained_model_name_or_path,
+        revision=None,
+        tokenizer_class=None,
+        use_fast=True,
+        **kwargs,
+    ):  # noqa: E501
         """
         Enables loading of different Tokenizer classes with a uniform interface. Either infer the class from
         model config or define it manually via `tokenizer_class`.
@@ -73,7 +92,7 @@ class Tokenizer:
         :type use_fast: bool
         :param kwargs:
         :return: Tokenizer
-        """
+        """  # noqa: E501
         pretrained_model_name_or_path = str(pretrained_model_name_or_path)
         kwargs["revision"] = revision
 
@@ -85,65 +104,115 @@ class Tokenizer:
         ret = None
         if "AlbertTokenizer" in tokenizer_class:
             if use_fast:
-                ret = AlbertTokenizerFast.from_pretrained(pretrained_model_name_or_path, keep_accents=True, **kwargs)
+                ret = AlbertTokenizerFast.from_pretrained(
+                    pretrained_model_name_or_path, keep_accents=True, **kwargs
+                )  # noqa: E501
             else:
-                ret = AlbertTokenizer.from_pretrained(pretrained_model_name_or_path, keep_accents=True,  **kwargs)
+                ret = AlbertTokenizer.from_pretrained(
+                    pretrained_model_name_or_path, keep_accents=True, **kwargs
+                )  # noqa: E501
         elif "XLMRobertaTokenizer" in tokenizer_class:
             if use_fast:
-                ret = XLMRobertaTokenizerFast.from_pretrained(pretrained_model_name_or_path, **kwargs)
+                ret = XLMRobertaTokenizerFast.from_pretrained(
+                    pretrained_model_name_or_path, **kwargs
+                )  # noqa: E501
             else:
-                ret = XLMRobertaTokenizer.from_pretrained(pretrained_model_name_or_path, **kwargs)
+                ret = XLMRobertaTokenizer.from_pretrained(
+                    pretrained_model_name_or_path, **kwargs
+                )  # noqa: E501
         elif "RobertaTokenizer" in tokenizer_class:
             if use_fast:
-                ret = RobertaTokenizerFast.from_pretrained(pretrained_model_name_or_path, **kwargs)
+                ret = RobertaTokenizerFast.from_pretrained(
+                    pretrained_model_name_or_path, **kwargs
+                )  # noqa: E501
             else:
-                ret = RobertaTokenizer.from_pretrained(pretrained_model_name_or_path, **kwargs)
+                ret = RobertaTokenizer.from_pretrained(
+                    pretrained_model_name_or_path, **kwargs
+                )  # noqa: E501
         elif "DistilBertTokenizer" in tokenizer_class:
             if use_fast:
-                ret = DistilBertTokenizerFast.from_pretrained(pretrained_model_name_or_path, **kwargs)
+                ret = DistilBertTokenizerFast.from_pretrained(
+                    pretrained_model_name_or_path, **kwargs
+                )  # noqa: E501
             else:
-                ret = DistilBertTokenizer.from_pretrained(pretrained_model_name_or_path, **kwargs)
+                ret = DistilBertTokenizer.from_pretrained(
+                    pretrained_model_name_or_path, **kwargs
+                )  # noqa: E501
         elif "BertTokenizer" in tokenizer_class:
             if use_fast:
-                ret = BertTokenizerFast.from_pretrained(pretrained_model_name_or_path, **kwargs)
+                ret = BertTokenizerFast.from_pretrained(
+                    pretrained_model_name_or_path, **kwargs
+                )  # noqa: E501
             else:
-                ret = BertTokenizer.from_pretrained(pretrained_model_name_or_path, **kwargs)
+                ret = BertTokenizer.from_pretrained(
+                    pretrained_model_name_or_path, **kwargs
+                )  # noqa: E501
         elif "XLNetTokenizer" in tokenizer_class:
             if use_fast:
-                ret = XLNetTokenizerFast.from_pretrained(pretrained_model_name_or_path, keep_accents=True, **kwargs)
+                ret = XLNetTokenizerFast.from_pretrained(
+                    pretrained_model_name_or_path, keep_accents=True, **kwargs
+                )  # noqa: E501
             else:
-                ret = XLNetTokenizer.from_pretrained(pretrained_model_name_or_path, keep_accents=True, **kwargs)
+                ret = XLNetTokenizer.from_pretrained(
+                    pretrained_model_name_or_path, keep_accents=True, **kwargs
+                )  # noqa: E501
         elif "ElectraTokenizer" in tokenizer_class:
             if use_fast:
-                ret = ElectraTokenizerFast.from_pretrained(pretrained_model_name_or_path, **kwargs)
+                ret = ElectraTokenizerFast.from_pretrained(
+                    pretrained_model_name_or_path, **kwargs
+                )  # noqa: E501
             else:
-                ret = ElectraTokenizer.from_pretrained(pretrained_model_name_or_path, **kwargs)
+                ret = ElectraTokenizer.from_pretrained(
+                    pretrained_model_name_or_path, **kwargs
+                )  # noqa: E501
         elif tokenizer_class == "EmbeddingTokenizer":
             if use_fast:
-                logger.error('EmbeddingTokenizerFast is not supported! Using EmbeddingTokenizer instead.')
-                ret = EmbeddingTokenizer.from_pretrained(pretrained_model_name_or_path, **kwargs)
+                logger.error(
+                    "EmbeddingTokenizerFast is not supported! Using EmbeddingTokenizer instead."  # noqa: E501
+                )  # noqa: E501
+                ret = EmbeddingTokenizer.from_pretrained(
+                    pretrained_model_name_or_path, **kwargs
+                )  # noqa: E501
             else:
-                ret = EmbeddingTokenizer.from_pretrained(pretrained_model_name_or_path, **kwargs)
+                ret = EmbeddingTokenizer.from_pretrained(
+                    pretrained_model_name_or_path, **kwargs
+                )  # noqa: E501
         elif "CamembertTokenizer" in tokenizer_class:
             if use_fast:
-                ret = CamembertTokenizerFast.from_pretrained(pretrained_model_name_or_path, **kwargs)
+                ret = CamembertTokenizerFast.from_pretrained(
+                    pretrained_model_name_or_path, **kwargs
+                )  # noqa: E501
             else:
-                ret = CamembertTokenizer.from_pretrained(pretrained_model_name_or_path, **kwargs)
+                ret = CamembertTokenizer.from_pretrained(
+                    pretrained_model_name_or_path, **kwargs
+                )  # noqa: E501
         elif "DPRQuestionEncoderTokenizer" in tokenizer_class:
             if use_fast:
-                ret = DPRQuestionEncoderTokenizerFast.from_pretrained(pretrained_model_name_or_path, **kwargs)
+                ret = DPRQuestionEncoderTokenizerFast.from_pretrained(
+                    pretrained_model_name_or_path, **kwargs
+                )  # noqa: E501
             else:
-                ret = DPRQuestionEncoderTokenizer.from_pretrained(pretrained_model_name_or_path, **kwargs)
-        elif "DPRContextEncoderTokenizer"  in tokenizer_class:
+                ret = DPRQuestionEncoderTokenizer.from_pretrained(
+                    pretrained_model_name_or_path, **kwargs
+                )  # noqa: E501
+        elif "DPRContextEncoderTokenizer" in tokenizer_class:
             if use_fast:
-                ret = DPRContextEncoderTokenizerFast.from_pretrained(pretrained_model_name_or_path, **kwargs)
+                ret = DPRContextEncoderTokenizerFast.from_pretrained(
+                    pretrained_model_name_or_path, **kwargs
+                )  # noqa: E501
             else:
-                ret = DPRContextEncoderTokenizer.from_pretrained(pretrained_model_name_or_path, **kwargs)
+                ret = DPRContextEncoderTokenizer.from_pretrained(
+                    pretrained_model_name_or_path, **kwargs
+                )  # noqa: E501
         elif "BigBirdTokenizer" in tokenizer_class:
             if use_fast:
-                ret = BigBirdTokenizerFast.from_pretrained(pretrained_model_name_or_path, **kwargs)
+                ret = BigBirdTokenizerFast.from_pretrained(
+                    pretrained_model_name_or_path, **kwargs
+                )  # noqa: E501
             else:
-                ret = BigBirdTokenizer.from_pretrained(pretrained_model_name_or_path, **kwargs)
+                ret = BigBirdTokenizer.from_pretrained(
+                    pretrained_model_name_or_path, **kwargs
+                )  # noqa: E501
         if ret is None:
             raise Exception("Unable to load tokenizer")
         else:
@@ -157,10 +226,16 @@ class Tokenizer:
         except OSError:
             # FARM model (no 'config.json' file)
             try:
-                config = AutoConfig.from_pretrained(pretrained_model_name_or_path + "/language_model_config.json")
-            except Exception as e:
-                logger.warning("No config file found. Trying to infer Tokenizer type from model name")
-                tokenizer_class = Tokenizer._infer_tokenizer_class_from_string(pretrained_model_name_or_path)
+                config = AutoConfig.from_pretrained(
+                    pretrained_model_name_or_path + "/language_model_config.json"
+                )  # noqa: E501
+            except Exception:
+                logger.warning(
+                    "No config file found. Trying to infer Tokenizer type from model name"  # noqa: E501
+                )  # noqa: E501
+                tokenizer_class = Tokenizer._infer_tokenizer_class_from_string(
+                    pretrained_model_name_or_path
+                )  # noqa: E501
                 return tokenizer_class
 
         model_type = config.model_type
@@ -169,7 +244,9 @@ class Tokenizer:
             tokenizer_class = "XLMRobertaTokenizer"
         elif model_type == "roberta":
             if "mlm" in pretrained_model_name_or_path.lower():
-                raise NotImplementedError("MLM part of codebert is currently not supported in FARM")
+                raise NotImplementedError(
+                    "MLM part of codebert is currently not supported in FARM"
+                )  # noqa: E501
             tokenizer_class = "RobertaTokenizer"
         elif model_type == "camembert":
             tokenizer_class = "CamembertTokenizer"
@@ -189,14 +266,20 @@ class Tokenizer:
             elif config.architectures[0] == "DPRContextEncoder":
                 tokenizer_class = "DPRContextEncoderTokenizer"
             elif config.architectures[0] == "DPRReader":
-                raise NotImplementedError("DPRReader models are currently not supported.")
+                raise NotImplementedError(
+                    "DPRReader models are currently not supported."
+                )  # noqa: E501
         elif model_type == "big_bird":
             tokenizer_class = "BigBirdTokenizer"
         else:
             # Fall back to inferring type from model name
-            logger.warning("Could not infer Tokenizer type from config. Trying to infer "
-                           "Tokenizer type from model name.")
-            tokenizer_class = Tokenizer._infer_tokenizer_class_from_string(pretrained_model_name_or_path)
+            logger.warning(
+                "Could not infer Tokenizer type from config. Trying to infer "  # noqa: E501
+                "Tokenizer type from model name."
+            )
+            tokenizer_class = Tokenizer._infer_tokenizer_class_from_string(
+                pretrained_model_name_or_path
+            )  # noqa: E501
 
         return tokenizer_class
 
@@ -215,10 +298,15 @@ class Tokenizer:
             tokenizer_class = "RobertaTokenizer"
         elif "codebert" in pretrained_model_name_or_path.lower():
             if "mlm" in pretrained_model_name_or_path.lower():
-                raise NotImplementedError("MLM part of codebert is currently not supported in FARM")
+                raise NotImplementedError(
+                    "MLM part of codebert is currently not supported in FARM"
+                )  # noqa: E501
             else:
                 tokenizer_class = "RobertaTokenizer"
-        elif "camembert" in pretrained_model_name_or_path.lower() or "umberto" in pretrained_model_name_or_path.lower():
+        elif (
+            "camembert" in pretrained_model_name_or_path.lower()
+            or "umberto" in pretrained_model_name_or_path.lower()
+        ):  # noqa: E501
             tokenizer_class = "CamembertTokenizer"
         elif "distilbert" in pretrained_model_name_or_path.lower():
             tokenizer_class = "DistilBertTokenizer"
@@ -228,9 +316,11 @@ class Tokenizer:
             tokenizer_class = "XLNetTokenizer"
         elif "electra" in pretrained_model_name_or_path.lower():
             tokenizer_class = "ElectraTokenizer"
-        elif "word2vec" in pretrained_model_name_or_path.lower() or \
-                "glove" in pretrained_model_name_or_path.lower() or \
-                "fasttext" in pretrained_model_name_or_path.lower():
+        elif (
+            "word2vec" in pretrained_model_name_or_path.lower()
+            or "glove" in pretrained_model_name_or_path.lower()
+            or "fasttext" in pretrained_model_name_or_path.lower()
+        ):
             tokenizer_class = "EmbeddingTokenizer"
         elif "minilm" in pretrained_model_name_or_path.lower():
             tokenizer_class = "BertTokenizer"
@@ -239,30 +329,31 @@ class Tokenizer:
         elif "dpr-ctx_encoder" in pretrained_model_name_or_path.lower():
             tokenizer_class = "DPRContextEncoderTokenizer"
         else:
-            raise ValueError(f"Could not infer tokenizer_class from model config or "
-                             f"name '{pretrained_model_name_or_path}'. Set arg `tokenizer_class` "
-                             f"in Tokenizer.load() to one of: AlbertTokenizer, XLMRobertaTokenizer, "
-                             f"RobertaTokenizer, DistilBertTokenizer, BertTokenizer, XLNetTokenizer, "
-                             f"CamembertTokenizer, ElectraTokenizer, DPRQuestionEncoderTokenizer,"
-                             f"DPRContextEncoderTokenizer.")
+            raise ValueError(
+                f"Could not infer tokenizer_class from model config or "
+                f"name '{pretrained_model_name_or_path}'. Set arg `tokenizer_class` "  # noqa: E501
+                f"in Tokenizer.load() to one of: AlbertTokenizer, XLMRobertaTokenizer, "  # noqa: E501
+                f"RobertaTokenizer, DistilBertTokenizer, BertTokenizer, XLNetTokenizer, "  # noqa: E501
+                f"CamembertTokenizer, ElectraTokenizer, DPRQuestionEncoderTokenizer,"  # noqa: E501
+                f"DPRContextEncoderTokenizer."
+            )
 
         return tokenizer_class
 
 
 class EmbeddingTokenizer(PreTrainedTokenizer):
-    """Constructs an EmbeddingTokenizer.
-    """
+    """Constructs an EmbeddingTokenizer."""
 
     def __init__(
-            self,
-            vocab_file,
-            do_lower_case=True,
-            unk_token="[UNK]",
-            sep_token="[SEP]",
-            pad_token="[PAD]",
-            cls_token="[CLS]",
-            mask_token="[MASK]",
-            **kwargs
+        self,
+        vocab_file,
+        do_lower_case=True,
+        unk_token="[UNK]",
+        sep_token="[SEP]",
+        pad_token="[PAD]",
+        cls_token="[CLS]",
+        mask_token="[MASK]",
+        **kwargs,
     ):
         """
         :param vocab_file: Path to a one-word-per-line vocabulary file
@@ -270,7 +361,7 @@ class EmbeddingTokenizer(PreTrainedTokenizer):
         :param do_lower_case: Flag whether to lower case the input
         :type do_lower_case: bool
         """
-        # TODO check why EmbeddingTokenizer.tokenize gives many UNK, while tokenize_with_metadata() works fine
+        # TODO check why EmbeddingTokenizer.tokenize gives many UNK, while tokenize_with_metadata() works fine  # noqa: E501
 
         super().__init__(
             unk_token=unk_token,
@@ -282,10 +373,12 @@ class EmbeddingTokenizer(PreTrainedTokenizer):
         )
 
         if not os.path.isfile(vocab_file):
-            raise ValueError("Can't find a vocabulary file at path '{}'.".format(vocab_file))
+            raise ValueError(f"Can't find a vocabulary file at path '{vocab_file}'.")
         self.vocab = load_vocab(vocab_file)
         self.unk_tok_idx = self.vocab[unk_token]
-        self.ids_to_tokens = collections.OrderedDict([(ids, tok) for tok, ids in self.vocab.items()])
+        self.ids_to_tokens = collections.OrderedDict(
+            [(ids, tok) for tok, ids in self.vocab.items()]
+        )  # noqa: E501
         self.do_lower_case = do_lower_case
 
     @property
@@ -297,25 +390,33 @@ class EmbeddingTokenizer(PreTrainedTokenizer):
         """Load the tokenizer from local path or remote."""
         if pretrained_model_name_or_path in EMBEDDING_VOCAB_FILES_MAP["vocab_file"]:
             # Get the vocabulary from AWS S3 bucket or cache
-            resolved_vocab_file = load_from_cache(pretrained_model_name_or_path,
-                                                  EMBEDDING_VOCAB_FILES_MAP["vocab_file"],
-                                                  **kwargs)
+            resolved_vocab_file = load_from_cache(
+                pretrained_model_name_or_path,
+                EMBEDDING_VOCAB_FILES_MAP["vocab_file"],
+                **kwargs,
+            )
         elif os.path.isdir(pretrained_model_name_or_path):
             # Get the vocabulary from local files
             logger.info(
-                f"Model name '{pretrained_model_name_or_path}' not found in model shortcut name "
+                f"Model name '{pretrained_model_name_or_path}' not found in model shortcut name "  # noqa: E501
                 f"list ({', '.join(EMBEDDING_VOCAB_FILES_MAP['vocab_file'].keys())}). "
-                f"Assuming '{pretrained_model_name_or_path}' is a path to a directory containing tokenizer files.")
+                f"Assuming '{pretrained_model_name_or_path}' is a path to a directory containing tokenizer files."  # noqa: E501
+            )  # noqa: E501
 
-            temp = open(str(Path(pretrained_model_name_or_path) / "language_model_config.json"), "r",
-                        encoding="utf-8").read()
+            temp = open(  # noqa: SIM115
+                str(Path(pretrained_model_name_or_path) / "language_model_config.json"),  # noqa: SIM115, E501
+                encoding="utf-8",
+            ).read()
             config_dict = json.loads(temp)
 
-            resolved_vocab_file = str(Path(pretrained_model_name_or_path) / config_dict["vocab_filename"])
+            resolved_vocab_file = str(
+                Path(pretrained_model_name_or_path) / config_dict["vocab_filename"]
+            )  # noqa: E501
         else:
             logger.error(
-                f"Model name '{pretrained_model_name_or_path}' not found in model shortcut name "
-                f"list ({', '.join(EMBEDDING_VOCAB_FILES_MAP['vocab_file'].keys())}) nor as local folder ")
+                f"Model name '{pretrained_model_name_or_path}' not found in model shortcut name "  # noqa: E501
+                f"list ({', '.join(EMBEDDING_VOCAB_FILES_MAP['vocab_file'].keys())}) nor as local folder "  # noqa: E501
+            )  # noqa: E501
             raise NotImplementedError
 
         tokenizer = cls(vocab_file=resolved_vocab_file, **kwargs)
@@ -339,8 +440,8 @@ class EmbeddingTokenizer(PreTrainedTokenizer):
             for token, token_index in sorted(self.vocab.items(), key=lambda kv: kv[1]):
                 if index != token_index:
                     logger.warning(
-                        "Saving vocabulary to {}: vocabulary indices are not consecutive."
-                        " Please check that the vocabulary is not corrupted!".format(vocab_file)
+                        f"Saving vocabulary to {vocab_file}: vocabulary indices are not consecutive."  # noqa: E501
+                        " Please check that the vocabulary is not corrupted!"
                     )
                     index = token_index
                 writer.write(token + "\n")
@@ -372,19 +473,21 @@ def tokenize_with_metadata(text, tokenizer):
     :return: Dictionary with "tokens", "offsets" and "start_of_word"
     :rtype: dict
 
-    """
+    """  # noqa: E501
     # normalize all other whitespace characters to " "
     # Note: using text.split() directly would destroy the offset,
     # since \n\n\n would be treated similarly as a single \n
     text = re.sub(r"\s", " ", text)
     # Fast Tokenizers return offsets, so we don't need to calculate them ourselves
     if tokenizer.is_fast:
-        #tokenized = tokenizer(text, return_offsets_mapping=True, return_special_tokens_mask=True)
-        tokenized2 = tokenizer.encode_plus(text, return_offsets_mapping=True, return_special_tokens_mask=True)
+        # tokenized = tokenizer(text, return_offsets_mapping=True, return_special_tokens_mask=True)  # noqa: E501
+        tokenized2 = tokenizer.encode_plus(
+            text, return_offsets_mapping=True, return_special_tokens_mask=True
+        )  # noqa: E501
 
         tokens2 = tokenized2["input_ids"]
         offsets2 = np.array([x[0] for x in tokenized2["offset_mapping"]])
-        #offsets2 = [x[0] for x in tokenized2["offset_mapping"]]
+        # offsets2 = [x[0] for x in tokenized2["offset_mapping"]]
         words = np.array(tokenized2.encodings[0].words)
 
         # TODO check for validity for all tokenizer and special token types
@@ -403,13 +506,17 @@ def tokenize_with_metadata(text, tokenizer):
         #         start_of_word3.append(1)
         #         last_word = word_id
 
-        tokenized_dict = {"tokens": tokens2, "offsets": offsets2, "start_of_word": start_of_word2}
+        tokenized_dict = {
+            "tokens": tokens2,
+            "offsets": offsets2,
+            "start_of_word": start_of_word2,
+        }  # noqa: E501
     else:
         # split text into "words" (here: simple whitespace tokenizer).
         words = text.split(" ")
         word_offsets = []
         cumulated = 0
-        for idx, word in enumerate(words):
+        for idx, word in enumerate(words):  # noqa: B007
             word_offsets.append(cumulated)
             cumulated += len(word) + 1  # 1 because we so far have whitespace tokenizer
 
@@ -418,7 +525,11 @@ def tokenize_with_metadata(text, tokenizer):
             words, word_offsets, tokenizer
         )
 
-        tokenized_dict = {"tokens": tokens, "offsets": offsets, "start_of_word": start_of_word}
+        tokenized_dict = {
+            "tokens": tokens,
+            "offsets": offsets,
+            "start_of_word": start_of_word,
+        }  # noqa: E501
 
     return tokenized_dict
 
@@ -434,12 +545,12 @@ def _words_to_tokens(words, word_offsets, tokenizer):
     :param tokenizer: Tokenizer (e.g. from Tokenizer.load())
     :return: tokens, offsets, start_of_word
 
-    """
+    """  # noqa: E501
     tokens = []
     token_offsets = []
     start_of_word = []
     idx = 0
-    for w, w_off in zip(words, word_offsets):
+    for w, w_off in zip(words, word_offsets, strict=False):
         idx += 1
         if idx % 500000 == 0:
             logger.info(idx)
@@ -447,14 +558,14 @@ def _words_to_tokens(words, word_offsets, tokenizer):
 
         # empty / pure whitespace
         if len(w) == 0:
-          continue
+            continue
         # For the first word of a text: we just call the regular tokenize function.
-        # For later words: we need to call it with add_prefix_space=True to get the same results with roberta / gpt2 tokenizer
+        # For later words: we need to call it with add_prefix_space=True to get the same results with roberta / gpt2 tokenizer  # noqa: E501
         # see discussion here. https://github.com/huggingface/transformers/issues/1196
         elif len(tokens) == 0:
             tokens_word = tokenizer.tokenize(w)
         else:
-            if type(tokenizer) == RobertaTokenizer:
+            if type(tokenizer) == RobertaTokenizer:  # noqa: E721
                 tokens_word = tokenizer.tokenize(w, add_prefix_space=True)
             else:
                 tokens_word = tokenizer.tokenize(w)
@@ -463,12 +574,12 @@ def _words_to_tokens(words, word_offsets, tokenizer):
             continue
         tokens += tokens_word
 
-        # get global offset for each token in word + save marker for first tokens of a word
+        # get global offset for each token in word + save marker for first tokens of a word  # noqa: E501
         first_tok = True
         for tok in tokens_word:
             token_offsets.append(w_off)
-            # Depending on the tokenizer type special chars are added to distinguish tokens with preceeding
-            # whitespace (=> "start of a word"). We need to get rid of these to calculate the original length of the token
+            # Depending on the tokenizer type special chars are added to distinguish tokens with preceeding  # noqa: E501
+            # whitespace (=> "start of a word"). We need to get rid of these to calculate the original length of the token  # noqa: E501
             orig_tok = re.sub(SPECIAL_TOKENIZER_CHARS, "", tok)
             # Don't use length of unk token for offset calculation
             if orig_tok == tokenizer.special_tokens_map["unk_token"]:
@@ -484,8 +595,15 @@ def _words_to_tokens(words, word_offsets, tokenizer):
     return tokens, token_offsets, start_of_word
 
 
-def truncate_sequences(seq_a, seq_b, tokenizer, max_seq_len, truncation_strategy='longest_first',
-                       with_special_tokens=True, stride=0):
+def truncate_sequences(
+    seq_a,
+    seq_b,
+    tokenizer,
+    max_seq_len,
+    truncation_strategy="longest_first",  # noqa: E501
+    with_special_tokens=True,
+    stride=0,
+):
     """
     Reduces a single sequence or a pair of sequences to a maximum sequence length.
     The sequences can contain tokens or any other elements (offsets, masks ...).
@@ -513,19 +631,24 @@ def truncate_sequences(seq_a, seq_b, tokenizer, max_seq_len, truncation_strategy
     :type stride: int
     :return: truncated seq_a, truncated seq_b, overflowing tokens
 
-    """
+    """  # noqa: E501
     pair = bool(seq_b is not None)
     len_a = len(seq_a)
     len_b = len(seq_b) if pair else 0
-    num_special_tokens = tokenizer.num_special_tokens_to_add(pair=pair) if with_special_tokens else 0
+    num_special_tokens = (
+        tokenizer.num_special_tokens_to_add(pair=pair) if with_special_tokens else 0
+    )  # noqa: E501
     total_len = len_a + len_b + num_special_tokens
     overflowing_tokens = []
 
     if max_seq_len and total_len > max_seq_len:
-        seq_a, seq_b, overflowing_tokens = tokenizer.truncate_sequences(seq_a, pair_ids=seq_b,
-                                                                        num_tokens_to_remove=total_len - max_seq_len,
-                                                                        truncation_strategy=truncation_strategy,
-                                                                        stride=stride)
+        seq_a, seq_b, overflowing_tokens = tokenizer.truncate_sequences(
+            seq_a,
+            pair_ids=seq_b,  # noqa: E501
+            num_tokens_to_remove=total_len - max_seq_len,  # noqa: E501
+            truncation_strategy=truncation_strategy,
+            stride=stride,
+        )
     return (seq_a, seq_b, overflowing_tokens)
 
 
@@ -551,7 +674,7 @@ def insert_at_special_tokens_pos(seq, special_tokens_mask, insert_element):
     :param insert_element: the value you want to insert
     :return: list
 
-    """
+    """  # noqa: E501
     new_seq = seq.copy()
     special_tokens_indices = np.where(np.array(special_tokens_mask) == 1)[0]
     for idx in special_tokens_indices:
@@ -572,14 +695,22 @@ def tokenize_batch_question_answering(pre_baskets, tokenizer, indices):
     :param tokenizer: tokenizer to be used
     :param indices: list, indices used during multiprocessing so that IDs assigned to our baskets are unique
     :return: baskets, list containing question and corresponding document information
-    """
+    """  # noqa: E501
     assert len(indices) == len(pre_baskets)
-    assert tokenizer.is_fast, "Processing QA data is only supported with fast tokenizers for now.\n" \
-                              "Please load Tokenizers with 'use_fast=True' option."
+    assert tokenizer.is_fast, (
+        "Processing QA data is only supported with fast tokenizers for now.\n"
+        "Please load Tokenizers with 'use_fast=True' option."
+    )  # noqa: E501
     baskets = []
     # # Tokenize texts in batch mode
     texts = [d["context"] for d in pre_baskets]
-    tokenized_docs_batch = tokenizer.batch_encode_plus(texts, return_offsets_mapping=True, return_special_tokens_mask=True, add_special_tokens=False, verbose=False)
+    tokenized_docs_batch = tokenizer.batch_encode_plus(
+        texts,
+        return_offsets_mapping=True,
+        return_special_tokens_mask=True,
+        add_special_tokens=False,
+        verbose=False,
+    )  # noqa: E501
 
     # Extract relevant data
     tokenids_batch = tokenized_docs_batch["input_ids"]
@@ -595,7 +726,12 @@ def tokenize_batch_question_answering(pre_baskets, tokenizer, indices):
         # # Tokenize questions one by one
         for i_q, q in enumerate(d["qas"]):
             question_text = q["question"]
-            tokenized_q = tokenizer.encode_plus(question_text, return_offsets_mapping=True, return_special_tokens_mask=True, add_special_tokens=False)
+            tokenized_q = tokenizer.encode_plus(
+                question_text,
+                return_offsets_mapping=True,
+                return_special_tokens_mask=True,
+                add_special_tokens=False,
+            )  # noqa: E501
 
             # Extract relevant data
             question_tokenids = tokenized_q["input_ids"]
@@ -603,31 +739,43 @@ def tokenize_batch_question_answering(pre_baskets, tokenizer, indices):
             question_sow = _get_start_of_word_QA(tokenized_q.encodings[0].words)
 
             external_id = q["id"]
-            # The internal_id depends on unique ids created for each process before forking
+            # The internal_id depends on unique ids created for each process before forking  # noqa: E501
             internal_id = f"{indices[i_doc]}-{i_q}"
-            raw = {"document_text": document_text,
-                   "document_tokens": tokenids_batch[i_doc],
-                   "document_offsets": offsets_batch[i_doc],
-                   "document_start_of_word": start_of_words_batch[i_doc],
-                   "question_text": question_text,
-                   "question_tokens": question_tokenids,
-                   "question_offsets": question_offsets,
-                   "question_start_of_word": question_sow,
-                   "answers": q["answers"],
-                   }
+            raw = {
+                "document_text": document_text,
+                "document_tokens": tokenids_batch[i_doc],
+                "document_offsets": offsets_batch[i_doc],
+                "document_start_of_word": start_of_words_batch[i_doc],
+                "question_text": question_text,
+                "question_tokens": question_tokenids,
+                "question_offsets": question_offsets,
+                "question_start_of_word": question_sow,
+                "answers": q["answers"],
+            }
             # TODO add only during debug mode (need to create debug mode)
-            raw["document_tokens_strings"] = tokenized_docs_batch.encodings[i_doc].tokens
+            raw["document_tokens_strings"] = tokenized_docs_batch.encodings[
+                i_doc
+            ].tokens  # noqa: E501
             raw["question_tokens_strings"] = tokenized_q.encodings[0].tokens
 
-            baskets.append(SampleBasket(raw=raw, id_internal=internal_id, id_external=external_id, samples=None))
+            baskets.append(
+                SampleBasket(
+                    raw=raw,
+                    id_internal=internal_id,
+                    id_external=external_id,
+                    samples=None,
+                )
+            )  # noqa: E501
     return baskets
+
 
 def _get_start_of_word_QA(word_ids):
     words = np.array(word_ids)
     start_of_word_single = [1] + list(np.ediff1d(words))
     return start_of_word_single
 
-#TODO standardize with other processors
+
+# TODO standardize with other processors
 def _get_start_of_word(word_ids, special_token_mask=None):
     words = np.array(word_ids)
     if special_token_mask:

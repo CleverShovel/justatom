@@ -1,18 +1,14 @@
-from justatom.modeling.mask import IHead
 import torch
+
+from justatom.modeling.mask import IHead
 from justatom.training.loss import init_loss
-from typing import Optional, Union
 
 
 class ANNHead(IHead):
-
     def __init__(
-        self,
-        loss_fn: Optional[Union[str, torch.nn.Module]] = None,
-        device="cpu",
-        **props
+        self, loss_fn: str | torch.nn.Module | None = None, device="cpu", **props
     ):
-        super(ANNHead, self).__init__()
+        super(ANNHead, self).__init__()  # noqa: UP008
         props_for_loss = props.get("loss", {})
         self.loss = init_loss(device=device, name=loss_fn, **props_for_loss)
         self.label_tensor_name = props.get("label_tensor_name", "labels")
@@ -51,7 +47,7 @@ class ANNHead(IHead):
                         and D is embedding size
 
         :return: dot_product: similarity score of each query with each context/passage (dimension: n1xn2)
-        """
+        """  # noqa: E501
         # q_vector: n1 x D, ctx_vectors: n2 x D, result n1 x n2
         dot_product = torch.matmul(
             query_vectors, torch.transpose(passage_vectors, 0, 1)

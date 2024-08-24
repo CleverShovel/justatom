@@ -1,5 +1,4 @@
 from math import ceil
-from typing import List, Optional
 
 import torch
 import torch.nn.functional as F
@@ -13,8 +12,8 @@ class NamedDataLoader(DataLoader):
         self,
         dataset: Dataset,
         batch_size: int,
-        sampler: Optional[Sampler] = None,
-        tensor_names: Optional[List[str]] = None,
+        sampler: Sampler | None = None,
+        tensor_names: list[str] | None = None,
         num_workers: int = 0,
         pin_memory: bool = False,
     ):
@@ -28,13 +27,13 @@ class NamedDataLoader(DataLoader):
         :param tensor_names: The names of the tensor, in the order that the dataset returns them in.
         :param num_workers: number of workers to use for the DataLoader
         :param pin_memory: argument for Data Loader to use page-locked memory for faster transfer of data to GPU
-        """
+        """  # noqa: E501
 
         def collate_fn(batch):
             """
             A custom collate function that formats the batch as a dictionary where the key is
             the name of the tensor and the value is the tensor itself
-            """
+            """  # noqa: E501
             if type(dataset).__name__ == "_StreamingDataSet":
                 _tensor_names = dataset.tensor_names
             else:
@@ -45,17 +44,19 @@ class NamedDataLoader(DataLoader):
 
             if len(batch[0]) != len(_tensor_names):
                 raise ModelingError(
-                    f"Dataset contains {len(batch[0])} tensors while there are {len(_tensor_names)} tensor names"
+                    f"Dataset contains {len(batch[0])} tensors while there are {len(_tensor_names)} tensor names"  # noqa: E501
                     f" supplied: {_tensor_names}"
                 )
 
-            max_num_labels = self._compute_max_number_of_labels(batch=batch, tensor_names=_tensor_names)
+            max_num_labels = self._compute_max_number_of_labels(
+                batch=batch, tensor_names=_tensor_names
+            )  # noqa: E501
 
             ret = {name: [] for name in tensor_names}
             for example in batch:
-                for name, tensor in zip(_tensor_names, example):
+                for name, tensor in zip(_tensor_names, example, strict=False):
                     # each example may have a different number of answers/labels,
-                    # so we need to pad the corresponding tensors to the max number of labels
+                    # so we need to pad the corresponding tensors to the max number of labels  # noqa: E501
                     if name == "labels" and tensor.ndim > 0:
                         num_labels = tensor.size(0)
                         if num_labels < max_num_labels:
@@ -89,10 +90,10 @@ class NamedDataLoader(DataLoader):
         """
         Compute the maximum number of labels in a batch.
         Each example may have a different number of labels, depending on the number of answers.
-        """
+        """  # noqa: E501
         max_num_labels = 0
         for example in batch:
-            for name, tensor in zip(tensor_names, example):
+            for name, tensor in zip(tensor_names, example, strict=False):
                 if name == "labels" and tensor.ndim > 0:
                     max_num_labels = max(max_num_labels, tensor.size(0))
         return max_num_labels

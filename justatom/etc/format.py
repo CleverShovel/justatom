@@ -1,6 +1,7 @@
 from datetime import datetime
-from pathlib import Path
 from itertools import islice
+from pathlib import Path
+
 import simplejson as json
 from fastnumbers import try_real
 
@@ -15,7 +16,7 @@ def convert_date_to_rfc3339(date: str) -> str:
 
     This method cannot be part of WeaviateDocumentStore, as this would result in a circular import between weaviate.py
     and filter_utils.py.
-    """
+    """  # noqa: E501
     parsed_datetime = datetime.fromisoformat(date)
     if parsed_datetime.utcoffset() is None:
         converted_date = parsed_datetime.isoformat() + "Z"
@@ -39,7 +40,7 @@ def maybe_json(x):
     try:
         json.dumps(x)
         return True
-    except:
+    except:  # noqa: E722
         return False
 
 
@@ -89,7 +90,7 @@ def grouper(iterable, n, worker_id=0, total_workers=1):
     :type worker_id: int
     :param total_workers: total number of workers for the PyTorch DataLoader
     :type total_workers: int
-    """
+    """  # noqa: E501
 
     # TODO make me comprehensible :)
     def get_iter_start_pos(gen):
@@ -123,4 +124,10 @@ def grouper(iterable, n, worker_id=0, total_workers=1):
     return iter(lambda: list(islice(iterable, n)), [])
 
 
-__all__ = ["convert_date_to_rfc3339", "maybe_number", "maybe_json", "get_batches_from_generator", "grouper"]
+__all__ = [
+    "convert_date_to_rfc3339",
+    "maybe_number",
+    "maybe_json",
+    "get_batches_from_generator",
+    "grouper",
+]  # noqa: E501

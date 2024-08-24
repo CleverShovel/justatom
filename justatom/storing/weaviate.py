@@ -2,8 +2,9 @@ import base64
 import datetime
 import json
 import os
+from collections.abc import Generator
 from dataclasses import asdict
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any
 
 import weaviate
 from loguru import logger
@@ -91,18 +92,18 @@ class WeaviateDocStore:
 
     document_store = WeaviateDocumentStore(url="http://localhost:8080")
     ```
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
         *,
-        url: Optional[str] = None,
-        collection_name: Optional[str] = "Default",
-        collection_settings: Optional[Dict[str, Any]] = None,
-        auth_client_secret: Optional[AuthCredentials] = None,
-        additional_headers: Optional[Dict] = None,
-        embedded_options: Optional[EmbeddedOptions] = None,
-        additional_config: Optional[AdditionalConfig] = None,
+        url: str | None = None,
+        collection_name: str | None = "Default",
+        collection_settings: dict[str, Any] | None = None,
+        auth_client_secret: AuthCredentials | None = None,
+        additional_headers: dict | None = None,
+        embedded_options: EmbeddedOptions | None = None,
+        additional_config: AdditionalConfig | None = None,
         grpc_port: int = 50051,
         grpc_secure: bool = False,
     ):
@@ -149,7 +150,7 @@ class WeaviateDocStore:
             The port to use for the gRPC connection.
         :param grpc_secure:
             Whether to use a secure channel for the underlying gRPC API.
-        """
+        """  # noqa: E501
         # proxies, timeout_config, trust_env are part of additional_config now
         # startup_period has been removed
         self._client = weaviate.WeaviateClient(
@@ -172,7 +173,7 @@ class WeaviateDocStore:
 
         # Test connection, it will raise an exception if it fails.
         self._client.collections._get_all(simple=True)
-        # TODO: Re=parametrize to make it friendly for hybrid-search via bm25 + embedding search.
+        # TODO: Re=parametrize to make it friendly for hybrid-search via bm25 + embedding search.  # noqa: E501
         if collection_settings is None:
             collection_settings = {
                 "class": collection_name.capitalize(),
@@ -200,7 +201,7 @@ class WeaviateDocStore:
         self._additional_config = additional_config
         self._collection = self._client.collections.get(collection_settings["class"])
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Serializes the component to a dictionary.
 
@@ -229,7 +230,7 @@ class WeaviateDocStore:
         )
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "WeaviateDocStore":
+    def from_dict(cls, data: dict[str, Any]) -> "WeaviateDocStore":
         """
         Deserializes the component from a dictionary.
 
@@ -268,13 +269,13 @@ class WeaviateDocStore:
         total = self._collection.aggregate.over_all(total_count=True).total_count
         return total if total else 0
 
-    def _to_data_object(self, document: Document) -> Dict[str, Any]:
+    def _to_data_object(self, document: Document) -> dict[str, Any]:
         """
         Converts a Document to a Weaviate data object ready to be saved.
         """
         data = document.to_dict()
         # Weaviate forces a UUID as an id.
-        # We don't know if the id of our Document is a UUID or not, so we save it on a different field
+        # We don't know if the id of our Document is a UUID or not, so we save it on a different field  # noqa: E501
         # and let Weaviate a UUID that we're going to ignore completely.
         data["_original_id"] = data.pop("id")
         blob = data.pop("blob", None)
@@ -292,30 +293,30 @@ class WeaviateDocStore:
             if sparse_embedding:
                 logger.warning(
                     "Document %s has the `sparse_embedding` field set,"
-                    "but storing sparse embeddings in Weaviate is not currently supported."
+                    "but storing sparse embeddings in Weaviate is not currently supported."  # noqa: E501
                     "The `sparse_embedding` field will be ignored.",
                     data["_original_id"],
                 )
 
         AVAILABLE_PROPS = set([f["name"] for f in DOCUMENT_COLLECTION_PROPERTIES])
         # Delete all the rest keys
-        if "meta" in data.keys() and "meta" not in AVAILABLE_PROPS:
+        if "meta" in data.keys() and "meta" not in AVAILABLE_PROPS:  # noqa: SIM118
             logger.warning(
-                f"[meta={data['meta']}] is present and will be ignored since it is NOT registred in a collection."
+                f"[meta={data['meta']}] is present and will be ignored since it is NOT registred in a collection."  # noqa: E501
             )
             del data["meta"]
 
         return data
 
-    def _to_document(self, data: DataObject[Dict[str, Any], None]) -> Document:
+    def _to_document(self, data: DataObject[dict[str, Any], None]) -> Document:
         """
         Converts a data object read from Weaviate into a Document.
         """
         document_data = data.properties
         document_data["id"] = document_data.pop("_original_id")
-        if isinstance(data.vector, List):
+        if isinstance(data.vector, list):
             document_data["embedding"] = data.vector
-        elif isinstance(data.vector, Dict):
+        elif isinstance(data.vector, dict):
             document_data["embedding"] = data.vector.get("default")
         else:
             document_data["embedding"] = None
@@ -346,7 +347,7 @@ class WeaviateDocStore:
 
         return Document.from_dict(document_data)
 
-    def _query(self) -> List[Dict[str, Any]]:
+    def _query(self) -> list[dict[str, Any]]:
         # properties = [p.name for p in self._collection.config.get().properties]
         try:
             result = self._collection.iterator(
@@ -357,15 +358,15 @@ class WeaviateDocStore:
             raise DocumentStoreError(msg) from e
         return result
 
-    def _query_with_filters(self, filters: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _query_with_filters(self, filters: dict[str, Any]) -> list[dict[str, Any]]:
         # properties = [p.name for p in self._collection.config.get().properties]
         # When querying with filters we need to paginate using limit and offset as using
         # a cursor with after is not possible. See the official docs:
         # https://weaviate.io/developers/weaviate/api/graphql/additional-operators#cursor-with-after
         #
-        # Nonetheless there's also another issue, paginating with limit and offset is not efficient
+        # Nonetheless there's also another issue, paginating with limit and offset is not efficient  # noqa: E501
         # and it's still restricted by the QUERY_MAXIMUM_RESULTS environment variable.
-        # If the sum of limit and offest is greater than QUERY_MAXIMUM_RESULTS an error is raised.
+        # If the sum of limit and offest is greater than QUERY_MAXIMUM_RESULTS an error is raised.  # noqa: E501
         # See the official docs for more:
         # https://weaviate.io/developers/weaviate/api/graphql/additional-operators#performance-considerations
         offset = 0
@@ -390,9 +391,7 @@ class WeaviateDocStore:
             offset += DEFAULT_QUERY_LIMIT
         return result
 
-    def filter_documents(
-        self, filters: Optional[Dict[str, Any]] = None
-    ) -> List[Document]:
+    def filter_documents(self, filters: dict[str, Any] | None = None) -> list[Document]:
         """
         Returns the documents that match the filters provided.
 
@@ -403,13 +402,13 @@ class WeaviateDocStore:
         :returns: A list of Documents that match the given filters.
         """
         result = []
-        if filters:
+        if filters:  # noqa: SIM108
             result = self._query_with_filters(filters)
         else:
             result = self._query()
         return [self._to_document(doc) for doc in result]
 
-    def _batch_write(self, documents: List[Document]) -> int:
+    def _batch_write(self, documents: list[Document]) -> int:
         """
         Writes document to Weaviate in batches.
         Documents with the same id will be overwritten.
@@ -429,7 +428,7 @@ class WeaviateDocStore:
                     vector=doc.embedding,
                 )
         if failed_objects := self._client.batch.failed_objects:
-            # We fallback to use the UUID if the _original_id is not present, this is just to be
+            # We fallback to use the UUID if the _original_id is not present, this is just to be  # noqa: E501
             mapped_objects = {}
             for obj in failed_objects:
                 properties = obj.object_.properties or {}
@@ -450,13 +449,13 @@ class WeaviateDocStore:
         # So we assume that all Documents were written.
         return len(documents)
 
-    def _write(self, documents: List[Document], policy: DuplicatePolicy) -> int:
+    def _write(self, documents: list[Document], policy: DuplicatePolicy) -> int:
         """
         Writes documents to Weaviate using the specified policy.
         This doesn't uses the batch API, so it's slower than _batch_write.
         If policy is set to SKIP it will skip any document that already exists.
         If policy is set to FAIL it will raise an exception if any of the documents already exists.
-        """
+        """  # noqa: E501
         written = 0
         duplicate_errors_ids = []
         for doc in documents:
@@ -482,12 +481,12 @@ class WeaviateDocStore:
                 if policy == DuplicatePolicy.FAIL:
                     duplicate_errors_ids.append(doc.id)
         if duplicate_errors_ids:
-            msg = f"IDs '{', '.join(duplicate_errors_ids)}' already exist in the document store."
+            msg = f"IDs '{', '.join(duplicate_errors_ids)}' already exist in the document store."  # noqa: E501
             raise DuplicateDocumentError(msg)
         return written
 
     def write_documents(
-        self, documents: List[Document], policy: DuplicatePolicy = DuplicatePolicy.NONE
+        self, documents: list[Document], policy: DuplicatePolicy = DuplicatePolicy.NONE
     ) -> int:
         """
         Writes documents to Weaviate using the specified policy.
@@ -496,7 +495,7 @@ class WeaviateDocStore:
         We can't use the batch API for other policies as it doesn't return any information whether the document
         already exists or not. That prevents us from returning errors when using the FAIL policy or skipping a
         Document when using the SKIP policy.
-        """
+        """  # noqa: E501
         if policy in [DuplicatePolicy.NONE, DuplicatePolicy.OVERWRITE]:
             return self._batch_write(documents)
 
@@ -504,10 +503,10 @@ class WeaviateDocStore:
 
     def get_all_documents(self, include_vector: bool = False) -> Generator:
         props = dict(include_vector=include_vector)
-        for obj in self._collection.iterator(**props):
+        for obj in self._collection.iterator(**props):  # noqa: UP028
             yield obj
 
-    def delete_documents(self, document_ids: List[str]) -> None:
+    def delete_documents(self, document_ids: list[str]) -> None:
         """
         Deletes all documents with matching document_ids from the DocumentStore.
 
@@ -524,9 +523,9 @@ class WeaviateDocStore:
         if len(ids) > 0:
             try:
                 self.delete_documents(document_ids=ids)
-            except:
+            except:  # noqa: E722
                 logger.error(
-                    f"Error deleting documents for {self._collection_settings.get('class')}, see logs for more details."
+                    f"Error deleting documents for {self._collection_settings.get('class')}, see logs for more details."  # noqa: E501
                 )
                 return False
             else:
@@ -539,11 +538,11 @@ class WeaviateDocStore:
     def search_by_keywords(
         self,
         query: str,
-        policy: Optional[SearchPolicy] = SearchPolicy.BM25,
-        filters: Optional[Dict[str, Any]] = None,
-        top_k: Optional[int] = None,
-        include_vector: Optional[bool] = False,
-    ) -> List[Document]:
+        policy: SearchPolicy | None = SearchPolicy.BM25,
+        filters: dict[str, Any] | None = None,
+        top_k: int | None = None,
+        include_vector: bool | None = False,
+    ) -> list[Document]:
         # properties = [p.name for p in self._collection.config.get().properties]
         if policy == SearchPolicy.BM25:
             result = self._collection.query.bm25(
@@ -558,7 +557,7 @@ class WeaviateDocStore:
                 ),
             )
         else:
-            msg = f"You specified {str(policy)} that is not compatable with [search_by_keywords]. Only [BM25] is avalaible"
+            msg = f"You specified {str(policy)} that is not compatable with [search_by_keywords]. Only [BM25] is avalaible"  # noqa: E501
             logger.error(msg)
             raise ValueError(msg)
 
@@ -567,17 +566,17 @@ class WeaviateDocStore:
     def search(
         self,
         query: str,
-        query_embedding: List[float],
-        rank_policy: Optional[str] = None,
-        alpha: Optional[float] = 0.22,
-        filters: Optional[Dict[str, Any]] = None,
-        top_k: Optional[int] = None,
-        return_metadata: Optional[List[str]] = None,
-        include_vector: Optional[bool] = False,
-    ) -> List[Document]:
+        query_embedding: list[float],
+        rank_policy: str | None = None,
+        alpha: float | None = 0.22,
+        filters: dict[str, Any] | None = None,
+        top_k: int | None = None,
+        return_metadata: list[str] | None = None,
+        include_vector: bool | None = False,
+    ) -> list[Document]:
         """
         This method assumes the hybrid search with one of the present `ranking` methods out there.
-        """
+        """  # noqa: E501
         return_metadata = (
             MetadataQuery(distance=True, score=True, explain_score=True, certainty=True)
             if return_metadata is None
@@ -597,13 +596,13 @@ class WeaviateDocStore:
 
     def search_by_embedding(
         self,
-        query_embedding: List[float],
-        filters: Optional[Dict[str, Any]] = None,
-        top_k: Optional[int] = None,
-        distance: Optional[float] = None,
-        certainty: Optional[float] = None,
-        return_metadata: Optional[List[str]] = None,
-    ) -> List[Document]:
+        query_embedding: list[float],
+        filters: dict[str, Any] | None = None,
+        top_k: int | None = None,
+        distance: float | None = None,
+        certainty: float | None = None,
+        return_metadata: list[str] | None = None,
+    ) -> list[Document]:
         if distance is not None and certainty is not None:
             msg = "Can't use 'distance' and 'certainty' parameters together"
             raise ValueError(msg)
@@ -625,8 +624,7 @@ class WeaviateDocStore:
 
 @singleton
 class IFinder:
-
-    store: Dict[str, WeaviateDocStore] = dict()
+    store: dict[str, WeaviateDocStore] = dict()
 
     def find(self, collection_name: str, **kwargs):
         if collection_name not in self.store:

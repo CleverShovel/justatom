@@ -1,7 +1,7 @@
 import warnings
 from collections import OrderedDict
 from numbers import Real
-from typing import Optional, Union
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -10,7 +10,7 @@ from loguru import logger
 from torch.nn import CrossEntropyLoss
 
 try:
-    from collections import Iterable
+    from collections.abc import Iterable
 except ImportError:
     from collections.abc import Iterable
 
@@ -55,31 +55,31 @@ class FocalLoss(nn.Module):
         >>> output.backward()
     References:
         [1] https://arxiv.org/abs/1708.02002
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
-        alpha: Optional[Union[float, Iterable]] = None,
+        alpha: float | Iterable | None = None,
         gamma: Real = 2.0,
         reduction: str = "mean",
         ignore_index: int = -100,
     ) -> None:
-        super(FocalLoss, self).__init__()
+        super(FocalLoss, self).__init__()  # noqa: UP008
         if (
             alpha is not None
             and not isinstance(alpha, float)
             and not isinstance(alpha, Iterable)
         ):
             raise ValueError(
-                f"alpha value should be None, float value or list of real values. Got: {type(alpha)}"
+                f"alpha value should be None, float value or list of real values. Got: {type(alpha)}"  # noqa: E501
             )
-        self.alpha: Optional[Union[float, torch.Tensor]] = (
+        self.alpha: float | torch.Tensor | None = (
             alpha
             if alpha is None or isinstance(alpha, float)
             else torch.FloatTensor(alpha)
         )
         if isinstance(alpha, float) and not 0.0 <= alpha <= 1.0:
-            warnings.warn("[Focal Loss] alpha value is to high must be between [0, 1]")
+            warnings.warn("[Focal Loss] alpha value is to high must be between [0, 1]")  # noqa: B028
 
         self.gamma: Real = gamma
         self.reduction: str = reduction
@@ -87,22 +87,18 @@ class FocalLoss(nn.Module):
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         if not torch.is_tensor(input):
-            raise TypeError(
-                "Input type is not a torch.Tensor. Got {}".format(type(input))
-            )
+            raise TypeError(f"Input type is not a torch.Tensor. Got {type(input)}")
         if input.shape[0] != target.shape[0]:
             raise ValueError(
-                f"First dimension of inputs and targets should be same shape. Got: {input.shape} and {target.shape}"
+                f"First dimension of inputs and targets should be same shape. Got: {input.shape} and {target.shape}"  # noqa: E501
             )
         if len(input.shape) != 2 or len(target.shape) != 1:
             raise ValueError(
-                f"input tensors should be of shape (N, C) and (N,). Got: {input.shape} and {target.shape}"
+                f"input tensors should be of shape (N, C) and (N,). Got: {input.shape} and {target.shape}"  # noqa: E501
             )
         if input.device != target.device:
             raise ValueError(
-                "input and target must be in the same device. Got: {}".format(
-                    input.device, target.device
-                )
+                f"input and target must be in the same device. Got: {input.device}"
             )
 
         # filter labels
@@ -142,15 +138,13 @@ class FocalLoss(nn.Module):
         elif self.reduction == "sum":
             loss = tmp_loss.sum()
         else:
-            raise NotImplementedError(
-                "Invalid reduction mode: {}".format(self.reduction)
-            )
+            raise NotImplementedError(f"Invalid reduction mode: {self.reduction}")
         return loss
 
 
 class MultiMarginLoss(nn.Module):
     def __init__(self, margin=1.0):
-        super(MultiMarginLoss, self).__init__()
+        super(MultiMarginLoss, self).__init__()  # noqa: UP008
         self.loss = torch.nn.MultiMarginLoss(margin=margin)
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
@@ -197,15 +191,15 @@ class DiceLoss(nn.Module):
         self,
         gamma: int = 0,
         scale: float = 1.0,
-        reduction: Optional[str] = "mean",
+        reduction: str | None = "mean",
         ignore_index: int = -100,
         eps: float = 1e-6,
         smooth: float = 0,
     ) -> None:
-        super(DiceLoss, self).__init__()
+        super(DiceLoss, self).__init__()  # noqa: UP008
         self.gamma: int = gamma
         self.scale: float = scale
-        self.reduction: Optional[str] = reduction
+        self.reduction: str | None = reduction
         self.ignore_index: int = ignore_index
         self.eps: float = eps
         self.smooth: float = smooth
@@ -214,19 +208,15 @@ class DiceLoss(nn.Module):
         if len(input.shape) == 2:
             if input.shape[0] != target.shape[0]:
                 raise ValueError(
-                    "number of elements in input and target shapes must be the same. Got: {}".format(
-                        input.shape, input.shape
-                    )
+                    f"number of elements in input and target shapes must be the same. Got: {input.shape}"  # noqa: E501
                 )
         else:
             raise ValueError(
-                "Invalid input shape, we expect or NxC. Got: {}".format(input.shape)
+                f"Invalid input shape, we expect or NxC. Got: {input.shape}"
             )
         if not input.device == target.device:
             raise ValueError(
-                "input and target must be in the same device. Got: {}".format(
-                    input.device, target.device
-                )
+                f"input and target must be in the same device. Got: {input.device}"
             )
         # compute softmax over the classes axis
         input_soft = F.softmax(input, dim=1)
@@ -263,9 +253,7 @@ class DiceLoss(nn.Module):
         elif self.reduction == "sum":
             return torch.sum(dice_loss)
         else:
-            raise NotImplementedError(
-                "Invalid reduction mode: {}".format(self.reduction)
-            )
+            raise NotImplementedError(f"Invalid reduction mode: {self.reduction}")
 
 
 class TverskyLoss(nn.Module):
@@ -312,17 +300,17 @@ class TverskyLoss(nn.Module):
         beta: float,
         gamma: int = 0,
         scale: float = 1.0,
-        reduction: Optional[str] = "mean",
+        reduction: str | None = "mean",
         ignore_index: int = -100,
         eps: float = 1e-6,
         smooth: float = 0,
     ) -> None:
-        super(TverskyLoss, self).__init__()
+        super(TverskyLoss, self).__init__()  # noqa: UP008
         self.alpha: float = alpha
         self.beta: float = beta
         self.gamma: int = gamma
         self.scale: float = scale
-        self.reduction: Optional[str] = reduction
+        self.reduction: str | None = reduction
         self.ignore_index: int = ignore_index
         self.eps: float = eps
         self.smooth: float = smooth
@@ -331,19 +319,15 @@ class TverskyLoss(nn.Module):
         if len(input.shape) == 2:
             if input.shape[0] != target.shape[0]:
                 raise ValueError(
-                    "number of elements in input and target shapes must be the same. Got: {}".format(
-                        input.shape, input.shape
-                    )
+                    f"number of elements in input and target shapes must be the same. Got: {input.shape}"  # noqa: E501
                 )
         else:
             raise ValueError(
-                "Invalid input shape, we expect or NxC. Got: {}".format(input.shape)
+                f"Invalid input shape, we expect or NxC. Got: {input.shape}"
             )
         if not input.device == target.device:
             raise ValueError(
-                "input and target must be in the same device. Got: {}".format(
-                    input.device, target.device
-                )
+                f"input and target must be in the same device. Got: {input.device}"
             )
         # compute softmax over the classes axis
         input_soft = F.softmax(input, dim=1)
@@ -383,9 +367,7 @@ class TverskyLoss(nn.Module):
         elif self.reduction == "sum":
             return torch.sum(tversky_loss)
         else:
-            raise NotImplementedError(
-                "Invalid reduction mode: {}".format(self.reduction)
-            )
+            raise NotImplementedError(f"Invalid reduction mode: {self.reduction}")
 
 
 def pdist(v):
@@ -395,7 +377,7 @@ def pdist(v):
 
 class TripletLoss(nn.Module):
     def __init__(self, margin=1.0, sample=False):
-        super(TripletLoss, self).__init__()
+        super(TripletLoss, self).__init__()  # noqa: UP008
         self.margin = margin
         self.sample = sample
 
@@ -421,8 +403,8 @@ class TripletLoss(nn.Module):
             posw = (dist + 1e-12) * mask_pos.float()
             posi = torch.multinomial(posw, 1)
             dist_p = dist.gather(0, posi.view(1, -1))
-            # There is likely a much better way of sampling negatives in proportion their difficulty, based on distance
-            # this was a quick hack that ended up working better for some datasets than hard negative
+            # There is likely a much better way of sampling negatives in proportion their difficulty, based on distance  # noqa: E501
+            # this was a quick hack that ended up working better for some datasets than hard negative  # noqa: E501
             negw = (1 / (dist + 1e-12)) * mask_neg.float()
             negi = torch.multinomial(negw, 1)
             dist_n = dist.gather(0, negi.view(1, -1))
@@ -434,7 +416,7 @@ class TripletLoss(nn.Module):
             )  # need to move to device
             # 2. Positive max distance calculation within the same groups
             #    dist_p.shape = batch_size.
-            #    dist_p[i] => max(distance(sample_i, sample_j) : sample_j and sample_i belong to the same group))
+            #    dist_p[i] => max(distance(sample_i, sample_j) : sample_j and sample_i belong to the same group))  # noqa: E501
             dist_p = torch.max(dist * mask_pos.float(), dim=1)[0]
             # 3.
             nindex = torch.max(torch.where(mask_neg, -dist, ninf), dim=1)[1]
@@ -513,7 +495,7 @@ class ContrastiveLoss(nn.Module):
         >>> positive_key = torch.randn(batch_size, embedding_size)
         >>> negative_keys = torch.randn(num_negative, embedding_size)
         >>> output = loss(query, positive_key, negative_keys)
-    """
+    """  # noqa: E501
 
     def __init__(self, temperature=0.1, reduction="mean", negative_mode="unpaired"):
         super().__init__()
@@ -552,11 +534,11 @@ class ContrastiveLoss(nn.Module):
         if neg_queries is not None:
             if negative_mode == "unpaired" and neg_queries.dim() != 2:
                 raise ValueError(
-                    "<neg_queries> must have 2 dimensions if <negative_mode> == 'unpaired'."
+                    "<neg_queries> must have 2 dimensions if <negative_mode> == 'unpaired'."  # noqa: E501
                 )
             if negative_mode == "paired" and neg_queries.dim() != 3:
                 raise ValueError(
-                    "<negative_keys> must have 3 dimensions if <negative_mode> == 'paired'."
+                    "<negative_keys> must have 3 dimensions if <negative_mode> == 'paired'."  # noqa: E501
                 )
 
         # Check matching number of samples.
@@ -564,21 +546,21 @@ class ContrastiveLoss(nn.Module):
             raise ValueError(
                 "<queries> and <pos_queries> must must have the same number of samples."
             )
-        if neg_queries is not None:
+        if neg_queries is not None:  # noqa: SIM102
             if negative_mode == "paired" and len(queries) != len(neg_queries):
                 raise ValueError(
-                    "If negative_mode == 'paired', then <negative_keys> must have the same number of samples as <query>."
+                    "If negative_mode == 'paired', then <negative_keys> must have the same number of samples as <query>."  # noqa: E501
                 )
 
         # Embedding vectors should have same number of components.
         if queries.shape[-1] != pos_queries.shape[-1]:
             raise ValueError(
-                "Vectors of <queries> and <pos_queries> should have the same number of components."
+                "Vectors of <queries> and <pos_queries> should have the same number of components."  # noqa: E501
             )
-        if neg_queries is not None:
+        if neg_queries is not None:  # noqa: SIM102
             if queries.shape[-1] != neg_queries.shape[-1]:
                 raise ValueError(
-                    "Vectors of <queries> and <neg_queries> should have the same number of components."
+                    "Vectors of <queries> and <neg_queries> should have the same number of components."  # noqa: E501
                 )
 
         # Normalize to unit vectors
@@ -629,7 +611,6 @@ class ContrastiveLoss(nn.Module):
 
 
 class UMAPLoss(nn.Module):
-
     def __init__(self, negative_sample_rate=5):
         self.negative_sample_rate = negative_sample_rate
 
@@ -642,7 +623,7 @@ class UMAPLoss(nn.Module):
         _batch_size,
     ):
         assert embedding_to.device == embedding_from.device, logger.error(
-            f"Device mismatch found. Device {embedding_to.device} != {embedding_from.device}"
+            f"Device mismatch found. Device {embedding_to.device} != {embedding_from.device}"  # noqa: E501
         )
         device = embedding_to.device
         embedding_neg_to = embedding_to.repeat(self.negative_sample_rate, 1)
@@ -705,11 +686,11 @@ class UMAPLoss(nn.Module):
         return attraction_term, repellant_term, CE
 
 
-def init_loss(device, weight: Optional = None, name: Optional[str] = None, **props):
+def init_loss(device, weight: Optional = None, name: str | None = None, **props):
     if weight and name is not None:
         logger.warning(
             "weight and name parametters are set at the same time"
-            f"will use weighted cross entropy loss. To use {name} loss set weight to None"
+            f"will use weighted cross entropy loss. To use {name} loss set weight to None"  # noqa: E501
         )
     if weight:
         loss_fct = CrossEntropyLoss(weight=torch.Tensor(weight).to(device))

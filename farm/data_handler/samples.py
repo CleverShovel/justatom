@@ -1,16 +1,16 @@
-from transformers.models.bert.tokenization_bert import whitespace_tokenize
-from farm.visual.ascii.images import SAMPLE
+import logging
+
 import numpy as np
 
-import logging
+from farm.visual.ascii.images import SAMPLE
 
 logger = logging.getLogger(__name__)
 
 
 class SampleBasket:
-    """ An object that contains one source text and the one or more samples that will be processed. This
+    """An object that contains one source text and the one or more samples that will be processed. This
     is needed for tasks like question answering where the source text can generate multiple input - label
-    pairs."""
+    pairs."""  # noqa: E501
 
     def __init__(self, id_internal: str, raw: dict, id_external=None, samples=None):
         """
@@ -22,17 +22,17 @@ class SampleBasket:
         :type raw: dict
         :param samples: An optional list of Samples used to populate the basket at initialization.
         :type samples: Sample
-        """
+        """  # noqa: E501
         self.id_internal = id_internal
         self.id_external = id_external
         self.raw = raw
         self.samples = samples
 
 
-class Sample(object):
+class Sample:
     """A single training/test sample. This should contain the input and the label. Is initialized with
     the human readable clear_text. Over the course of data preprocessing, this object is populated
-    with tokenized and featurized versions of the data."""
+    with tokenized and featurized versions of the data."""  # noqa: E501
 
     def __init__(self, id, clear_text, tokenized=None, features=None):
         """
@@ -45,21 +45,22 @@ class Sample(object):
         :param features: A dictionary containing features in a vectorized format needed by the model to process this sample.
         :type features: dict
 
-        """
+        """  # noqa: E501
         self.id = id
         self.clear_text = clear_text
         self.features = features
         self.tokenized = tokenized
 
     def __str__(self):
-
         if self.clear_text:
             clear_text_str = "\n \t".join(
                 [k + ": " + str(v) for k, v in self.clear_text.items()]
             )
             if len(clear_text_str) > 10000:
-                clear_text_str = clear_text_str[:10_000] + f"\nTHE REST IS TOO LONG TO DISPLAY. " \
-                                                           f"Remaining chars :{len(clear_text_str)-10_000}"
+                clear_text_str = (
+                    clear_text_str[:10_000] + f"\nTHE REST IS TOO LONG TO DISPLAY. "
+                    f"Remaining chars :{len(clear_text_str)-10_000}"
+                )  # noqa: E501
         else:
             clear_text_str = "None"
 
@@ -77,8 +78,10 @@ class Sample(object):
                 [k + ": " + str(v) for k, v in self.tokenized.items()]
             )
             if len(tokenized_str) > 10000:
-                tokenized_str = tokenized_str[:10_000] + f"\nTHE REST IS TOO LONG TO DISPLAY. " \
-                                                         f"Remaining chars: {len(tokenized_str)-10_000}"
+                tokenized_str = (
+                    tokenized_str[:10_000] + f"\nTHE REST IS TOO LONG TO DISPLAY. "
+                    f"Remaining chars: {len(tokenized_str)-10_000}"
+                )  # noqa: E501
         else:
             tokenized_str = "None"
         s = (
@@ -93,7 +96,6 @@ class Sample(object):
 
 
 def create_sample_one_label_one_text(raw_data, text_index, label_index, basket_id):
-
     # text = " ".join(raw_data[text_index:])
     text = raw_data[text_index]
     label = raw_data[label_index]
@@ -102,7 +104,6 @@ def create_sample_one_label_one_text(raw_data, text_index, label_index, basket_i
 
 
 def create_sample_ner(split_text, label, basket_id):
-
     text = " ".join(split_text)
     label = label
 
@@ -125,12 +126,11 @@ def process_answers(answers, doc_offsets, passage_start_c, passage_start_t):
         answer_start_t = offset_to_token_idx_vecorized(doc_offsets, answer_start_c)
         answer_end_t = offset_to_token_idx_vecorized(doc_offsets, answer_end_c)
 
-        # # Leaving this code for potentially debugging 'offset_to_token_idx_vecorized()'
+        # # Leaving this code for potentially debugging 'offset_to_token_idx_vecorized()'  # noqa: E501
         # answer_start_t2 = offset_to_token_idx(doc_offsets, answer_start_c)
         # answer_end_t2 = offset_to_token_idx(doc_offsets, answer_end_c)
         # if (answer_start_t != answer_start_t2) or (answer_end_t != answer_end_t2):
         #     pass
-
 
         # TODO: Perform check that answer can be recovered from document?
         # This section converts start and end so that they are relative to the passage
@@ -140,27 +140,28 @@ def process_answers(answers, doc_offsets, passage_start_c, passage_start_t):
         answer_start_t -= passage_start_t
         answer_end_t -= passage_start_t
 
-        curr_answer_clear = {"text": answer_text,
-                             "start_c": answer_start_c,
-                             "end_c": answer_end_c}
-        curr_answer_tokenized = {"start_t": answer_start_t,
-                                 "end_t": answer_end_t,
-                                 "answer_type": answer.get("answer_type","span")}
+        curr_answer_clear = {
+            "text": answer_text,
+            "start_c": answer_start_c,
+            "end_c": answer_end_c,
+        }
+        curr_answer_tokenized = {
+            "start_t": answer_start_t,
+            "end_t": answer_end_t,
+            "answer_type": answer.get("answer_type", "span"),
+        }
 
         answers_clear.append(curr_answer_clear)
         answers_tokenized.append(curr_answer_tokenized)
     return answers_clear, answers_tokenized
 
 
-def get_passage_offsets(doc_offsets,
-                        doc_stride,
-                        passage_len_t,
-                        doc_text):
+def get_passage_offsets(doc_offsets, doc_stride, passage_len_t, doc_text):
     """
     Get spans (start and end offsets) for passages by applying a sliding window function.
     The sliding window moves in steps of doc_stride.
     Returns a list of dictionaries which each describe the start, end and id of a passage
-    that is formed when chunking a document using a sliding window approach. """
+    that is formed when chunking a document using a sliding window approach."""  # noqa: E501
 
     passage_spans = []
     passage_id = 0
@@ -170,22 +171,24 @@ def get_passage_offsets(doc_offsets,
         passage_end_t = passage_start_t + passage_len_t
         passage_start_c = doc_offsets[passage_start_t]
 
-        # If passage_end_t points to the last token in the passage, define passage_end_c as the length of the document
+        # If passage_end_t points to the last token in the passage, define passage_end_c as the length of the document  # noqa: E501
         if passage_end_t >= doc_len_t - 1:
             passage_end_c = len(doc_text)
 
-        # Get document text up to the first token that is outside the passage. Strip of whitespace.
+        # Get document text up to the first token that is outside the passage. Strip of whitespace.  # noqa: E501
         # Use the length of this text as the passage_end_c
         else:
             end_ch_idx = doc_offsets[passage_end_t + 1]
             raw_passage_text = doc_text[:end_ch_idx]
             passage_end_c = len(raw_passage_text.strip())
 
-        passage_span = {"passage_start_t": passage_start_t,
-                        "passage_end_t": passage_end_t,
-                        "passage_start_c": passage_start_c,
-                        "passage_end_c": passage_end_c,
-                        "passage_id": passage_id}
+        passage_span = {
+            "passage_start_t": passage_start_t,
+            "passage_end_t": passage_end_t,
+            "passage_start_c": passage_start_c,
+            "passage_end_c": passage_end_c,
+            "passage_id": passage_id,
+        }
         passage_spans.append(passage_span)
         passage_id += 1
         # If the end idx is greater than or equal to the length of the passage
@@ -195,30 +198,31 @@ def get_passage_offsets(doc_offsets,
 
 
 def offset_to_token_idx(token_offsets, ch_idx):
-    """ Returns the idx of the token at the given character idx"""
+    """Returns the idx of the token at the given character idx"""
     n_tokens = len(token_offsets)
     for i in range(n_tokens):
         if (i + 1 == n_tokens) or (token_offsets[i] <= ch_idx < token_offsets[i + 1]):
             return i
 
+
 def offset_to_token_idx_vecorized(token_offsets, ch_idx):
-    """ Returns the idx of the token at the given character idx"""
+    """Returns the idx of the token at the given character idx"""
     ################
     ################
     ##################
-    # TODO CHECK THIS fct thoroughly - This must be bulletproof and inlcude start and end of sequence checks
-    # todo Possibly this function does not work for Natural Questions and needs adjustments
+    # TODO CHECK THIS fct thoroughly - This must be bulletproof and inlcude start and end of sequence checks  # noqa: E501
+    # todo Possibly this function does not work for Natural Questions and needs adjustments  # noqa: E501
     ################
     ################
     ##################
     # case ch_idx is at end of tokens
     if ch_idx >= np.max(token_offsets):
-        # TODO check "+ 1" (it is needed for making end indices compliant with old offset_to_token_idx() function)
+        # TODO check "+ 1" (it is needed for making end indices compliant with old offset_to_token_idx() function)  # noqa: E501
         # check weather end token is incluse or exclusive
         idx = np.argmax(token_offsets) + 1
-    # looking for the first occurence of token_offsets larger than ch_idx and taking one position to the left.
+    # looking for the first occurence of token_offsets larger than ch_idx and taking one position to the left.  # noqa: E501
     # This is needed to overcome n special_tokens at start of sequence
-    # and failsafe matching (the character start might not always coincide with a token offset, e.g. when starting at whitespace)
+    # and failsafe matching (the character start might not always coincide with a token offset, e.g. when starting at whitespace)  # noqa: E501
     else:
         idx = np.argmax(token_offsets > ch_idx) - 1
     return idx

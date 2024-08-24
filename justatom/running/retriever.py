@@ -1,35 +1,33 @@
-from justatom.running.mask import IRetrieverRunner
+import torch
+from loguru import logger
+from more_itertools import chunked
+
+from justatom.etc.pattern import singleton
+from justatom.processing.loader import NamedDataLoader
+from justatom.processing.mask import IProcessor
+from justatom.processing.silo import igniset
 from justatom.running.atomic import ATOMICLMRunner
 from justatom.running.m1 import M1LMRunner
 from justatom.running.m2 import M2LMRunner
-from justatom.processing.mask import IProcessor
-from typing import List, Union
-from loguru import logger
-from more_itertools import chunked
-import torch
-from justatom.processing.silo import igniset
-from justatom.processing.loader import NamedDataLoader
-from justatom.etc.pattern import singleton
+from justatom.running.mask import IRetrieverRunner
 from justatom.storing.mask import INNDocStore
 
 
 class ATOMICRetriever(IRetrieverRunner):
-
     def __init__(self, store: INNDocStore, model: ATOMICLMRunner):
         super().__init__()
         self.store = store
         self.model = model.eval()
 
-    def retrieve_topk(self, queries: List[str], top_k: int = 5):
+    def retrieve_topk(self, queries: list[str], top_k: int = 5):
         pass
 
 
 class HybridRetriever(IRetrieverRunner):
-
     def __init__(
         self,
         store: INNDocStore,
-        runner: Union[M1LMRunner, M2LMRunner],
+        runner: M1LMRunner | M2LMRunner,
         processor: IProcessor,
         device="cpu",
     ):
@@ -40,14 +38,14 @@ class HybridRetriever(IRetrieverRunner):
         self.device = device
         if runner.device != device:
             logger.info(
-                f"Callback from {self.__class__.__name__} is fired to move to new device {device}. Old device = {runner.device}"
+                f"Callback from {self.__class__.__name__} is fired to move to new device {device}. Old device = {runner.device}"  # noqa: E501
             )
             self.runner.to(device)
 
     @torch.no_grad()
     def retrieve_topk(
         self,
-        queries: Union[str, List[str]],
+        queries: str | list[str],
         top_k: int = 5,
         prefix: str = None,
         include_embedding: bool = False,
@@ -72,23 +70,24 @@ class HybridRetriever(IRetrieverRunner):
         )
         answer = []
 
-        for _queries, _batches in zip(chunked(queries, n=batch_size), loader):
+        for _queries, _batches in zip(
+            chunked(queries, n=batch_size), loader, strict=False
+        ):  # noqa: E501
             batches = {k: v.to(self.device) for k, v in _batches.items()}
             vectors = (
                 self.runner(batch=batches)[0].cpu().numpy().tolist()
             )  # batch_size x vector_dim
-            for vector, query in zip(vectors, _queries):
+            for vector, query in zip(vectors, _queries, strict=False):  # noqa: B007
                 res_topk = self.store.search(vector, alpha=alpha, top_k=top_k)
                 answer.append(res_topk)
         return answer
 
 
 class EmbeddingRetriever(IRetrieverRunner):
-
     def __init__(
         self,
         store: INNDocStore,
-        runner: Union[M1LMRunner, M2LMRunner, ATOMICLMRunner],
+        runner: M1LMRunner | M2LMRunner | ATOMICLMRunner,
         processor: IProcessor,
         device: str = "cpu",
     ):
@@ -99,7 +98,7 @@ class EmbeddingRetriever(IRetrieverRunner):
         self.device = device
         if runner.device != device:
             logger.info(
-                f"Callback from {self.__class__.__name__} is fired to move to new device {device}. Old device = {runner.device}"
+                f"Callback from {self.__class__.__name__} is fired to move to new device {device}. Old device = {runner.device}"  # noqa: E501
             )
             self.runner.to(device)
 
@@ -108,7 +107,7 @@ class EmbeddingRetriever(IRetrieverRunner):
     @torch.no_grad()
     def retrieve_topk(
         self,
-        queries: Union[str, List[str]],
+        queries: str | list[str],
         top_k: int = 5,
         prefix: str = None,
         include_embedding: bool = False,
@@ -132,26 +131,27 @@ class EmbeddingRetriever(IRetrieverRunner):
         )
         answer = []
 
-        for _queries, _batches in zip(chunked(queries, n=batch_size), loader):
+        for _queries, _batches in zip(
+            chunked(queries, n=batch_size), loader, strict=False
+        ):  # noqa: E501
             batches = {k: v.to(self.device) for k, v in _batches.items()}
             vectors = (
                 self.runner(batch=batches)[0].cpu().numpy().tolist()
             )  # batch_size x vector_dim
-            for vector, query in zip(vectors, _queries):
+            for vector, query in zip(vectors, _queries, strict=False):  # noqa: B007
                 res_topk = self.store.search_by_embedding(vector, top_k=top_k)
                 answer.append(res_topk)
         return answer
 
 
 class KWARGRetriever(IRetrieverRunner):
-
     def __init__(self, store: INNDocStore):
         super().__init__()
         self.store = store
 
     def retrieve_topk(
         self,
-        queries: Union[str, List[str]],
+        queries: str | list[str],
         top_k: int = 5,
         include_scores: bool = False,
     ):
@@ -165,7 +165,6 @@ class KWARGRetriever(IRetrieverRunner):
 
 @singleton
 class ByName:
-
     def named(self, name: str, **kwargs):
         OPS = ["keywords", "emebedding", "hybrid", "justatom"]
 
@@ -178,7 +177,7 @@ class ByName:
         elif name == "justatom":
             klass = ATOMICRetriever
         else:
-            msg = f"Unknown name=[{name}] to init IRetrieverRunner instance. Use one of {','.join(OPS)}"
+            msg = f"Unknown name=[{name}] to init IRetrieverRunner instance. Use one of {','.join(OPS)}"  # noqa: E501
             logger.error(msg)
             raise ValueError(msg)
 

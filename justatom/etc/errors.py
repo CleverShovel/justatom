@@ -1,7 +1,5 @@
 """Custom Errors"""
 
-from typing import Optional
-
 
 class IError(Exception):
     """
@@ -10,12 +8,12 @@ class IError(Exception):
     `HaystackError.message` will exist and have the expected content.
     If send_message_in_event is set to True (default), the message will be sent as part of a telemetry event reporting the error.
     The messages of errors that might contain user-specific information will not be sent, e.g., DocumentStoreError.
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
-        message: Optional[str] = None,
-        docs_link: Optional[str] = None,
+        message: str | None = None,
+        docs_link: str | None = None,
         send_message_in_event: bool = True,
     ):
         super().__init__()
@@ -42,8 +40,8 @@ class ModelingError(IError):
 
     def __init__(
         self,
-        message: Optional[str] = None,
-        docs_link: Optional[str] = "https://github.com/atomicai/patronum",
+        message: str | None = None,
+        docs_link: str | None = "https://github.com/atomicai/patronum",
     ):
         super().__init__(message=message, docs_link=docs_link)
 
@@ -53,52 +51,57 @@ class PipelineError(IError):
 
     def __init__(
         self,
-        message: Optional[str] = None,
-        docs_link: Optional[str] = "https://github.com/atomicai/patronum",
+        message: str | None = None,
+        docs_link: str | None = "https://github.com/atomicai/patronum",
     ):
         super().__init__(message=message, docs_link=docs_link)
 
 
 class PipelineSchemaError(PipelineError):
-    """Exception for issues arising when reading/building the JSON schema of pipelines"""
+    """Exception for issues arising when reading/building the JSON schema of pipelines"""  # noqa: E501
 
-    def __init__(self, message: Optional[str] = None):
+    def __init__(self, message: str | None = None):
         super().__init__(message=message)
 
 
 class PipelineConfigError(PipelineError):
     """Exception for issues raised within a pipeline's config file"""
 
-    def __init__(self, message: Optional[str] = None, docs_link: Optional[str] = None):
+    def __init__(self, message: str | None = None, docs_link: str | None = None):
         super().__init__(message=message, docs_link=docs_link)
 
 
 class DocumentStoreError(IError):
     """Exception for issues that occur in a document store"""
 
-    def __init__(self, message: Optional[str] = None, send_message_in_event: bool = False):
+    def __init__(self, message: str | None = None, send_message_in_event: bool = False):
         super().__init__(message=message, send_message_in_event=send_message_in_event)
 
 
 class FilterError(DocumentStoreError):
     """Exception for issues that occur building complex filters"""
 
-    def __init__(self, message: Optional[str] = None):
+    def __init__(self, message: str | None = None):
         super().__init__(message=message)
 
 
 class DuplicateDocumentError(DocumentStoreError, ValueError):
     """Exception for Duplicate document"""
 
-    def __init__(self, message: Optional[str] = None):
+    def __init__(self, message: str | None = None):
         super().__init__(message=message)
 
 
 class DeserializationError(IError):
     """Exception for issues that occur when attempt to deserialize forbidden object"""
 
-    def __init__(self, message: Optional[str] = None):
+    def __init__(self, message: str | None = None):
         super().__init__(message=message)
 
 
-__all__ = ["FilterError", "DuplicateDocumentError", "DocumentStoreError", "ModelingError"]
+__all__ = [
+    "FilterError",
+    "DuplicateDocumentError",
+    "DocumentStoreError",
+    "ModelingError",
+]  # noqa: E501

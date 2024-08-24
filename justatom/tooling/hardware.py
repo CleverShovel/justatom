@@ -21,7 +21,7 @@ def initialize_device_settings(use_gpus, local_rank=-1, use_amp=None):
         device = torch.device("cuda", local_rank)
         torch.cuda.set_device(device)
         n_gpu = 1
-        # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
+        # Initializes the distributed backend which will take care of sychronizing nodes/GPUs  # noqa: E501
         torch.distributed.init_process_group(backend="nccl")
     logger.info(f"Using device: {str(device).upper()} ")
     logger.info(f"Number of GPUs: {n_gpu}")

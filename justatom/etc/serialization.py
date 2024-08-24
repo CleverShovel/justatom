@@ -1,8 +1,9 @@
-from typing import Any, Dict, Type
+from typing import Any
+
 from justatom.etc.errors import DeserializationError
 
 
-def generate_qualified_class_name(cls: Type[object]) -> str:
+def generate_qualified_class_name(cls: type[object]) -> str:
     """
     Generates a qualified class name for a class.
 
@@ -14,7 +15,7 @@ def generate_qualified_class_name(cls: Type[object]) -> str:
     return f"{cls.__module__}.{cls.__name__}"
 
 
-def default_to_dict(obj: Any, **init_parameters) -> Dict[str, Any]:
+def default_to_dict(obj: Any, **init_parameters) -> dict[str, Any]:
     """
     Utility function to serialize an object to a dictionary.
 
@@ -53,10 +54,13 @@ def default_to_dict(obj: Any, **init_parameters) -> Dict[str, Any]:
     :returns:
         A dictionary representation of the instance.
     """
-    return {"type": generate_qualified_class_name(type(obj)), "init_parameters": init_parameters}
+    return {
+        "type": generate_qualified_class_name(type(obj)),
+        "init_parameters": init_parameters,
+    }  # noqa: E501
 
 
-def default_from_dict(cls: Type[object], data: Dict[str, Any]) -> Any:
+def default_from_dict(cls: type[object], data: dict[str, Any]) -> Any:
     """
     Utility function to deserialize a dictionary to an object.
 
@@ -77,12 +81,14 @@ def default_from_dict(cls: Type[object], data: Dict[str, Any]) -> Any:
 
     :raises DeserializationError:
         If the `type` field in `data` is missing or it doesn't match the type of `cls`.
-    """
+    """  # noqa: E501
     init_params = data.get("init_parameters", {})
     if "type" not in data:
         raise DeserializationError("Missing 'type' in serialization data")
     if data["type"] != generate_qualified_class_name(cls):
-        raise DeserializationError(f"Class '{data['type']}' can't be deserialized as '{cls.__name__}'")
+        raise DeserializationError(
+            f"Class '{data['type']}' can't be deserialized as '{cls.__name__}'"
+        )  # noqa: E501
     return cls(**init_params)
 
 

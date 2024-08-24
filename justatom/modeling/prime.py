@@ -1,6 +1,6 @@
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import numpy as np
 import simplejson as json
@@ -19,7 +19,6 @@ from justatom.processing.silo import igniset
 
 
 class E5GeneralWrapper(ILanguageModel):
-
     def __init__(self):
         super().__init__()
 
@@ -51,7 +50,7 @@ class E5Model(E5GeneralWrapper):
 
     def __init__(
         self,
-        model_name_or_instance: Union[str, nn.Module] = "intfloat/multilingual-e5-base",
+        model_name_or_instance: str | nn.Module = "intfloat/multilingual-e5-base",
         device="cpu",
         **kwargs,
     ):
@@ -106,9 +105,7 @@ class E5SModel(E5GeneralWrapper):
 
     def __init__(
         self,
-        model_name_or_instance: Union[
-            str, nn.Module
-        ] = "intfloat/multilingual-e5-small",
+        model_name_or_instance: str | nn.Module = "intfloat/multilingual-e5-small",
         device="cpu",
         **kwargs,
     ):
@@ -160,9 +157,7 @@ class E5LModel(E5GeneralWrapper):
 
     def __init__(
         self,
-        model_name_or_instance: Union[
-            str, nn.Module
-        ] = "intfloat/multilingual-e5-large",
+        model_name_or_instance: str | nn.Module = "intfloat/multilingual-e5-large",
         device="cpu",
         **kwargs,
     ):
@@ -213,12 +208,10 @@ class E5LModel(E5GeneralWrapper):
 
 
 class MBERTModel(ILanguageModel):
-
     def __init__(
         self,
-        model_name_or_instance: Union[
-            str, nn.Module
-        ] = "google-bert/bert-base-multilingual-cased",
+        model_name_or_instance: str
+        | nn.Module = "google-bert/bert-base-multilingual-cased",  # noqa: E501
         device: str = "cpu",
         **kwargs,
     ):
@@ -269,19 +262,19 @@ class MBERTModel(ILanguageModel):
 
 
 class ATOMICModel(ILanguageModel):
-    """A Transformer Orchestration Model Involving Classification module. Base version for both inferene and high quality."""
+    """A Transformer Orchestration Model Involving Classification module. Base version for both inferene and high quality."""  # noqa: E501
 
     pass
 
 
 class ATOMICSModel(ILanguageModel):
-    """A Transformer Orchestration Model Involving Classification module. Small version optimized for fast inference."""
+    """A Transformer Orchestration Model Involving Classification module. Small version optimized for fast inference."""  # noqa: E501
 
     pass
 
 
 class ATOMICLModel(ILanguageModel):
-    """A Transformer Orchestration Model Involving Classification module. Large version designed for the best quality."""
+    """A Transformer Orchestration Model Involving Classification module. Large version designed for the best quality."""  # noqa: E501
 
     pass
 
@@ -294,7 +287,7 @@ class IPFBERTModel(IModel):
     def __init__(
         self, embedding: nn.Module = None, attention: nn.Module = None, **props
     ):
-        super(IPFBERTModel, self).__init__()
+        super(IPFBERTModel, self).__init__()  # noqa: UP008
         if embedding is not None and attention is not None:
             self.embedding = embedding
             self.blocks = attention
@@ -332,15 +325,13 @@ class IPFBERTModel(IModel):
 
         return cls(embedding=emb, attention=att)
 
-    def save(
-        self, save_dir: Union[str, Path], state_dict: Optional[Dict[Any, Any]] = None
-    ):
+    def save(self, save_dir: str | Path, state_dict: dict[Any, Any] | None = None):
         """
         Save the model `state_dict` and its configuration file so that it can be loaded again.
 
         :param save_dir: The directory in which the model should be saved.
         :param state_dict: A dictionary containing the whole state of the module, including names of layers. By default, the unchanged state dictionary of the module is used.
-        """
+        """  # noqa: E501
         Path(save_dir).mkdir(parents=True, exist_ok=True)
         # (1). Save the encoder with attention module and config(s)
         self.blocks.save(save_dir)
@@ -394,7 +385,7 @@ class DocEmbedder(IDocEmbedder):
     @torch.no_grad()
     def encode(
         self,
-        texts: List[str],
+        texts: list[str],
         batch_size: int = 1,
         padding: bool = True,
         truncation: bool = True,
@@ -423,8 +414,7 @@ class DocEmbedder(IDocEmbedder):
         if verbose:
             batch_gen = tqdm(batch_gen)
 
-        for batch_begin, batch_features in zip(batch_gen, loader):
-
+        for batch_begin, batch_features in zip(batch_gen, loader, strict=False):  # noqa: B007
             batch = {k: v.to(device) for k, v in batch_features.items()}
 
             embeddings = self.model(**batch).cpu()
@@ -438,7 +428,7 @@ class IRECModel(IModel):
     """
 
     def __init__(self):
-        super(IRECModel, self).__init__()
+        super(IRECModel, self).__init__()  # noqa: UP008
 
     @classmethod
     def load(cls, pretrained_model_name_or_path):
@@ -447,8 +437,7 @@ class IRECModel(IModel):
 
 @singleton
 class ILMFinder:
-
-    store: Dict[str, ILanguageModel] = dict()
+    store: dict[str, ILanguageModel] = dict()
 
     def find(self, model_name_or_path: str, **kwargs):
         key = cached_call(model_name_or_path, **kwargs)

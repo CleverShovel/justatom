@@ -2,7 +2,7 @@ import abc
 import copy
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import numpy as np
 import simplejson as json
@@ -12,7 +12,7 @@ from loguru import logger
 
 from justatom.etc.errors import ModelingError
 
-#: Names of the attributes in various model configs which refer to the number of dimensions in the output vectors
+#: Names of the attributes in various model configs which refer to the number of dimensions in the output vectors  # noqa: E501
 OUTPUT_DIM_NAMES = ["dim", "hidden_size", "d_model"]
 
 GRANTED_MODEL_NAMES = [
@@ -30,7 +30,7 @@ class IModel(nn.Module, abc.ABC):
     """
     This parent class for those implementation(s) that do not fit any specific kind of domain.
     Neither (1) NLP nor (2) CV ...
-    """
+    """  # noqa: E501
 
     subclasses = {}
 
@@ -60,7 +60,9 @@ class IModel(nn.Module, abc.ABC):
             # it's a local directory in FARM format
             with open(config_file) as f:
                 config = json.load(f)
-            language_model = cls.subclasses[config["klass"]].load(model_name_or_path, **kwargs)
+            language_model = cls.subclasses[config["klass"]].load(
+                model_name_or_path, **kwargs
+            )  # noqa: E501
         else:
             from justatom.modeling.prime import COMMON_CLASS_MAPPING
 
@@ -73,7 +75,7 @@ class IModel(nn.Module, abc.ABC):
     def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor):
         raise NotImplementedError
 
-    def save_config(self, save_dir: Union[Path, str]):
+    def save_config(self, save_dir: Path | str):
         """
         Save the configuration of the language model in format.
         """
@@ -84,17 +86,19 @@ class IModel(nn.Module, abc.ABC):
         with open(str(save_filename), "w") as f:
             f.write(json.dumps(config))
 
-    def save(self, save_dir: Union[str, Path], state_dict: Optional[Dict[Any, Any]] = None):
+    def save(self, save_dir: str | Path, state_dict: dict[Any, Any] | None = None):
         """
         Save the model `state_dict` and its configuration file so that it can be loaded again.
 
         :param save_dir: The directory in which the model should be saved.
         :param state_dict: A dictionary containing the whole state of the module, including names of layers. By default, the unchanged state dictionary of the module is used.
-        """
+        """  # noqa: E501
         Path(save_dir).mkdir(parents=True, exist_ok=True)
         # Save Weights
         save_name = Path(save_dir) / "pytorch_model.bin"
-        model_to_save = self.model.module if hasattr(self.model, "module") else self.model  # Only save the model itself
+        model_to_save = (
+            self.model.module if hasattr(self.model, "module") else self.model
+        )  # Only save the model itself  # noqa: E501
 
         if not state_dict:
             state_dict = model_to_save.state_dict()  # type: ignore [union-attr]
@@ -106,7 +110,7 @@ class ILanguageModel(nn.Module, abc.ABC):
     """
     The parent class for any kind of model that can embed language into a semantic vector space.
     These models read in tokenized sentences and return vectors that capture the meaning of sentences or of tokens.
-    """
+    """  # noqa: E501
 
     subclasses = {}
 
@@ -131,13 +135,15 @@ class ILanguageModel(nn.Module, abc.ABC):
         **kwargs,
     ):
         config_file = Path(model_name_or_path) / "config.json"
-        # assert config_file.exists(), "The config is not found, couldn't load the model"
+        # assert config_file.exists(), "The config is not found, couldn't load the model"  # noqa: E501
         if config_file.exists():
             logger.info(f"Model found locally at {model_name_or_path}")
             # it's a local directory in FARM format
             with open(config_file) as f:
                 config = json.load(f)
-            language_model = cls.subclasses[config["klass"]].load(model_name_or_path, **kwargs)
+            language_model = cls.subclasses[config["klass"]].load(
+                model_name_or_path, **kwargs
+            )  # noqa: E501
         else:
             from justatom.modeling.prime import HF_CLASS_MAPPING
 
@@ -155,9 +161,10 @@ class ILanguageModel(nn.Module, abc.ABC):
         self,
         input_ids: torch.Tensor,
         attention_mask: torch.Tensor,
-        segment_ids: Optional[torch.Tensor],  # DistilBERT does not use them, see DistilBERTLanguageModel
-        output_hidden_states: Optional[bool] = None,
-        output_attentions: Optional[bool] = None,
+        segment_ids: torch.Tensor
+        | None,  # DistilBERT does not use them, see DistilBERTLanguageModel  # noqa: E501
+        output_hidden_states: bool | None = None,
+        output_attentions: bool | None = None,
         return_dict: bool = False,
     ):
         raise NotImplementedError
@@ -191,11 +198,15 @@ class ILanguageModel(nn.Module, abc.ABC):
                     self._output_dims = value
                     return value
             except AttributeError:
-                raise ModelingError("Can't get the output dimension before loading the model.")
+                raise ModelingError(  # noqa: B904
+                    "Can't get the output dimension before loading the model."
+                )  # noqa: B904, E501
 
-        raise ModelingError("Could not infer the output dimensions of the language model.")
+        raise ModelingError(
+            "Could not infer the output dimensions of the language model."
+        )  # noqa: E501
 
-    def save_config(self, save_dir: Union[Path, str]):
+    def save_config(self, save_dir: Path | str):
         """
         Save the configuration of the language model in format.
         """
@@ -206,17 +217,19 @@ class ILanguageModel(nn.Module, abc.ABC):
         with open(str(save_filename), "w") as f:
             f.write(json.dumps(config))
 
-    def save(self, save_dir: Union[str, Path], state_dict: Optional[Dict[Any, Any]] = None):
+    def save(self, save_dir: str | Path, state_dict: dict[Any, Any] | None = None):
         """
         Save the model `state_dict` and its configuration file so that it can be loaded again.
 
         :param save_dir: The directory in which the model should be saved.
         :param state_dict: A dictionary containing the whole state of the module, including names of layers. By default, the unchanged state dictionary of the module is used.
-        """
+        """  # noqa: E501
         Path(save_dir).mkdir(parents=True, exist_ok=True)
         # Save Weights
         save_name = Path(save_dir) / "pytorch_model.bin"
-        model_to_save = self.model.module if hasattr(self.model, "module") else self.model  # Only save the model itself
+        model_to_save = (
+            self.model.module if hasattr(self.model, "module") else self.model
+        )  # Only save the model itself  # noqa: E501
 
         if not state_dict:
             state_dict = model_to_save.state_dict()  # type: ignore [union-attr]
@@ -228,8 +241,8 @@ class ILanguageModel(nn.Module, abc.ABC):
         logits,
         samples,
         ignore_first_token: bool = True,
-        padding_mask: Optional[torch.Tensor] = None,
-    ) -> List[Dict[str, Any]]:
+        padding_mask: torch.Tensor | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Extracting vectors from a language model (for example, for extracting sentence embeddings).
         You can use different pooling strategies and layers by specifying them in the object attributes
@@ -246,11 +259,13 @@ class ILanguageModel(nn.Module, abc.ABC):
         :param input_ids: IDs of the tokens in the vocabulary.
         :param kwargs: kwargs
         :return: A list of dictionaries containing predictions, for example: [{"context": "some text", "vec": [-0.01, 0.5 ...]}].
-        """
-        if not hasattr(self, "extraction_layer") or not hasattr(self, "extraction_strategy"):
+        """  # noqa: E501
+        if not hasattr(self, "extraction_layer") or not hasattr(
+            self, "extraction_strategy"
+        ):  # noqa: E501
             raise ModelingError(
                 "`extraction_layer` or `extraction_strategy` not specified for LM. "
-                "Make sure to set both, e.g. via Inferencer(extraction_strategy='cls_token', extraction_layer=-1)`"
+                "Make sure to set both, e.g. via Inferencer(extraction_strategy='cls_token', extraction_layer=-1)`"  # noqa: E501
             )
 
         # unpack the tuple from LM forward pass
@@ -261,7 +276,7 @@ class ILanguageModel(nn.Module, abc.ABC):
         if self.extraction_strategy == "pooled":
             if self.extraction_layer != -1:
                 raise ModelingError(
-                    f"Pooled output only works for the last layer, but got extraction_layer={self.extraction_layer}. "
+                    f"Pooled output only works for the last layer, but got extraction_layer={self.extraction_layer}. "  # noqa: E501
                     "Please set `extraction_layer=-1`"
                 )
             vecs = pooled_output.cpu().numpy()
@@ -269,14 +284,10 @@ class ILanguageModel(nn.Module, abc.ABC):
         elif self.extraction_strategy == "per_token":
             vecs = sequence_output.cpu().numpy()
 
-        elif self.extraction_strategy == "reduce_mean":
-            vecs = self._pool_tokens(
-                sequence_output,
-                padding_mask,
-                self.extraction_strategy,
-                ignore_first_token=ignore_first_token,
-            )
-        elif self.extraction_strategy == "reduce_max":
+        elif (
+            self.extraction_strategy == "reduce_mean"
+            or self.extraction_strategy == "reduce_max"
+        ):  # noqa: E501
             vecs = self._pool_tokens(
                 sequence_output,
                 padding_mask,
@@ -287,11 +298,11 @@ class ILanguageModel(nn.Module, abc.ABC):
             vecs = sequence_output[:, 0, :].cpu().numpy()
         else:
             raise NotImplementedError(
-                f"This extraction strategy ({self.extraction_strategy}) is not supported by Haystack."
+                f"This extraction strategy ({self.extraction_strategy}) is not supported by Haystack."  # noqa: E501
             )
 
         preds = []
-        for vec, sample in zip(vecs, samples):
+        for vec, sample in zip(vecs, samples, strict=False):
             pred = {}
             pred["context"] = sample.clear_text["text"]
             pred["vec"] = vec
@@ -309,15 +320,19 @@ class ILanguageModel(nn.Module, abc.ABC):
         # we only take the aggregated value of non-padding tokens
         padding_mask = padding_mask.cpu().numpy()
         ignore_mask_2d = padding_mask == 0
-        # sometimes we want to exclude the CLS token as well from our aggregation operation
+        # sometimes we want to exclude the CLS token as well from our aggregation operation  # noqa: E501
         if ignore_first_token:
             ignore_mask_2d[:, 0] = True
         ignore_mask_3d = np.zeros(token_vecs.shape, dtype=bool)
         ignore_mask_3d[:, :, :] = ignore_mask_2d[:, :, np.newaxis]
         if strategy == "reduce_max":
-            pooled_vecs = np.ma.array(data=token_vecs, mask=ignore_mask_3d).max(axis=1).data
+            pooled_vecs = (
+                np.ma.array(data=token_vecs, mask=ignore_mask_3d).max(axis=1).data
+            )  # noqa: E501
         if strategy == "reduce_mean":
-            pooled_vecs = np.ma.array(data=token_vecs, mask=ignore_mask_3d).mean(axis=1).data
+            pooled_vecs = (
+                np.ma.array(data=token_vecs, mask=ignore_mask_3d).mean(axis=1).data
+            )  # noqa: E501
 
         return pooled_vecs
 
@@ -341,15 +356,15 @@ class IRemoteLargeLanguageModel(abc.ABC):
         super().__init__()
 
     @abc.abstractmethod
-    def generate(self, prompt: str, history: List[str], **kwargs):
+    def generate(self, prompt: str, history: list[str], **kwargs):
         pass
 
 
-class ILargeLanguageModel(abc.ABC):
+class ILargeLanguageModel(abc.ABC):  # noqa: B024
     """
     The parent class for any kind of local LLM that can generate sequence of tokens.
     These models receive tokenized string (prefix) and return generated sequence via forward pass.
-    """
+    """  # noqa: E501
 
     subclasses = {}
 
@@ -368,7 +383,7 @@ class IVisionModel(nn.Module, abc.ABC):
     """
     The parent class for any kind of model that can embed image into a semantic vector space.
     These models read in patches of images and return vectors that capture the meaning of images or of patches.
-    """
+    """  # noqa: E501
 
     subclasses = {}
 
@@ -406,7 +421,7 @@ class IHead(nn.Module, abc.ABC):
     """
     Takes embeddings from one of [ILanguageModel | [IVisionModel] and
     generates logits for a given task. Can also convert logits to loss and and logits to predictions.
-    """
+    """  # noqa: E501
 
     subclasses = {}  # type: Dict
 
@@ -509,7 +524,7 @@ class IDocEmbedder(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def encode(self, texts: List[str], **kwargs) -> Iterator[np.ndarray]:
+    def encode(self, texts: list[str], **kwargs) -> Iterator[np.ndarray]:
         pass
 
 

@@ -1,25 +1,36 @@
 import logging
 import multiprocessing as mp
 import os
+from collections.abc import Generator
 from functools import partial
-import warnings
 
 import torch
 from torch.utils.data.sampler import SequentialSampler
 from tqdm import tqdm
-from typing import Generator, List, Union
 
 from farm.data_handler.dataloader import NamedDataLoader
-from farm.data_handler.processor import Processor, InferenceProcessor, NaturalQuestionsProcessor
-from farm.data_handler.utils import grouper
 from farm.data_handler.inputs import QAInput
-from farm.modeling.adaptive_model import AdaptiveModel, BaseAdaptiveModel, ONNXAdaptiveModel
-from farm.modeling.optimization import optimize_model
-from farm.utils import initialize_device_settings, WANDBLogger
-from farm.utils import set_all_seeds, calc_chunksize, log_ascii_workers, Benchmarker
+from farm.data_handler.processor import (
+    InferenceProcessor,
+    NaturalQuestionsProcessor,
+    Processor,
+)
+from farm.data_handler.utils import grouper
+from farm.modeling.adaptive_model import (
+    AdaptiveModel,
+    BaseAdaptiveModel,
+)
 from farm.modeling.predictions import QAPred
+from farm.utils import (
+    Benchmarker,
+    calc_chunksize,
+    initialize_device_settings,
+    log_ascii_workers,
+    set_all_seeds,
+)
 
 logger = logging.getLogger(__name__)
+
 
 class Inferencer:
     """
@@ -40,7 +51,7 @@ class Inferencer:
        # LM embeddings
        model = Inferencer.load(your_model_dir, extraction_strategy="cls_token", extraction_layer=-1)
        model.inference_from_dicts(dicts=basic_texts)
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -57,7 +68,7 @@ class Inferencer:
         num_processes=None,
         disable_tqdm=False,
         benchmarking=False,
-        dummy_ph=False
+        dummy_ph=False,
     ):
         """
         Initializes Inferencer from an AdaptiveModel and a Processor instance.
@@ -107,8 +118,8 @@ class Inferencer:
         :type benchmarking: bool
         :return: An instance of the Inferencer.
 
-        """
-        MLFlowLogger.disable()
+        """  # noqa: E501
+        MLFlowLogger.disable()  # noqa: F821
 
         # For benchmarking
         if dummy_ph:
@@ -119,7 +130,9 @@ class Inferencer:
             self.benchmarker = Benchmarker()
 
         # Init device and distributed settings
-        device, n_gpu = initialize_device_settings(use_cuda=gpu, local_rank=-1, use_amp=None)
+        device, n_gpu = initialize_device_settings(
+            use_cuda=gpu, local_rank=-1, use_amp=None
+        )  # noqa: E501
 
         self.processor = processor
         self.model = model
@@ -133,8 +146,10 @@ class Inferencer:
 
         if task_type == "embeddings":
             if not extraction_layer or not extraction_strategy:
-                    logger.warning("Using task_type='embeddings', but couldn't find one of the args `extraction_layer` and `extraction_strategy`. "
-                                   "Since FARM 0.4.2, you set both when initializing the Inferencer and then call inferencer.inference_from_dicts() instead of inferencer.extract_vectors()")
+                logger.warning(
+                    "Using task_type='embeddings', but couldn't find one of the args `extraction_layer` and `extraction_strategy`. "  # noqa: E501
+                    "Since FARM 0.4.2, you set both when initializing the Inferencer and then call inferencer.inference_from_dicts() instead of inferencer.extract_vectors()"  # noqa: E501
+                )  # noqa: E501
             self.model.prediction_heads = torch.nn.ModuleList([])
             self.model.language_model.extraction_layer = extraction_layer
             self.model.language_model.extraction_strategy = extraction_strategy
@@ -142,7 +157,7 @@ class Inferencer:
 
         # TODO add support for multiple prediction heads
 
-        self.name = name if name != None else f"anonymous-{self.task_type}"
+        self.name = name if name != None else f"anonymous-{self.task_type}"  # noqa: E711
         self.return_class_probs = return_class_probs
 
         model.connect_heads_with_processor(processor.tasks, require_labels=False)
@@ -240,16 +255,20 @@ class Inferencer:
         :type benchmarking: bool
         :return: An instance of the Inferencer.
 
-        """
+        """  # noqa: E501
         if tokenizer_args is None:
             tokenizer_args = {}
 
-        device, n_gpu = initialize_device_settings(use_cuda=gpu, local_rank=-1, use_amp=None)
+        device, n_gpu = initialize_device_settings(
+            use_cuda=gpu, local_rank=-1, use_amp=None
+        )  # noqa: E501
         name = os.path.basename(model_name_or_path)
 
         # a) either from local dir
         if os.path.exists(model_name_or_path):
-            model = BaseAdaptiveModel.load(load_dir=model_name_or_path, device=device, strict=strict)
+            model = BaseAdaptiveModel.load(
+                load_dir=model_name_or_path, device=device, strict=strict
+            )  # noqa: E501
             if task_type == "embeddings":
                 processor = InferenceProcessor.load_from_dir(model_name_or_path)
             else:
@@ -258,30 +277,38 @@ class Inferencer:
         # b) or from remote transformers model hub
         else:
             if not task_type:
-                raise ValueError("Please specify the 'task_type' of the model you want to load from transformers. "
-                                 "Valid options for arg `task_type`:"
-                                 "'question_answering', 'embeddings', 'text_classification', 'ner'")
+                raise ValueError(
+                    "Please specify the 'task_type' of the model you want to load from transformers. "  # noqa: E501
+                    "Valid options for arg `task_type`:"
+                    "'question_answering', 'embeddings', 'text_classification', 'ner'"
+                )  # noqa: E501
 
-            model = AdaptiveModel.convert_from_transformers(model_name_or_path,
-                                                            revision=revision,
-                                                            device=device,
-                                                            task_type=task_type)
-            processor = Processor.convert_from_transformers(model_name_or_path,
-                                                            revision=revision,
-                                                            task_type=task_type,
-                                                            max_seq_len=max_seq_len,
-                                                            doc_stride=doc_stride,
-                                                            tokenizer_class=tokenizer_class,
-                                                            tokenizer_args=tokenizer_args,
-                                                            use_fast=use_fast)
+            model = AdaptiveModel.convert_from_transformers(
+                model_name_or_path,
+                revision=revision,
+                device=device,
+                task_type=task_type,
+            )
+            processor = Processor.convert_from_transformers(
+                model_name_or_path,
+                revision=revision,
+                task_type=task_type,
+                max_seq_len=max_seq_len,
+                doc_stride=doc_stride,
+                tokenizer_class=tokenizer_class,
+                tokenizer_args=tokenizer_args,
+                use_fast=use_fast,
+            )
 
         # override processor attributes loaded from config or HF with inferencer params
         processor.max_seq_len = max_seq_len
         processor.multithreading_rust = multithreading_rust
         if hasattr(processor, "doc_stride"):
-            assert doc_stride < max_seq_len, "doc_stride is longer than max_seq_len. This means that there will be gaps " \
-                                             "as the passage windows slide, causing the model to skip over parts of the document. " \
-                                             "Please set a lower value for doc_stride (Suggestions: doc_stride=128, max_seq_len=384) "
+            assert doc_stride < max_seq_len, (
+                "doc_stride is longer than max_seq_len. This means that there will be gaps "  # noqa: E501
+                "as the passage windows slide, causing the model to skip over parts of the document. "  # noqa: E501
+                "Please set a lower value for doc_stride (Suggestions: doc_stride=128, max_seq_len=384) "  # noqa: E501
+            )  # noqa: E501
             processor.doc_stride = doc_stride
 
         return cls(
@@ -298,7 +325,7 @@ class Inferencer:
             num_processes=num_processes,
             disable_tqdm=disable_tqdm,
             benchmarking=benchmarking,
-            dummy_ph=dummy_ph
+            dummy_ph=dummy_ph,
         )
 
     def _set_multiprocessing_pool(self, num_processes):
@@ -315,7 +342,7 @@ class Inferencer:
                               done using this class. The garbage collector will not do this for you!
         :type num_processes: int
         :return:
-        """
+        """  # noqa: E501
         self.process_pool = None
         if num_processes == 0 or num_processes == 1:  # disable multiprocessing
             self.process_pool = None
@@ -326,10 +353,8 @@ class Inferencer:
                 else:
                     num_processes = mp.cpu_count()
             self.process_pool = mp.Pool(processes=num_processes)
-            logger.info(
-                f"Got ya {num_processes} parallel workers to do inference ..."
-            )
-            log_ascii_workers(n=num_processes,logger=logger)
+            logger.info(f"Got ya {num_processes} parallel workers to do inference ...")
+            log_ascii_workers(n=num_processes, logger=logger)
 
     def close_multiprocessing_pool(self, join=False):
         """Close the `multiprocessing.Pool` again.
@@ -351,7 +376,9 @@ class Inferencer:
         self.model.save(path)
         self.processor.save(path)
 
-    def inference_from_file(self, file, multiprocessing_chunksize=None, streaming=False, return_json=True):
+    def inference_from_file(
+        self, file, multiprocessing_chunksize=None, streaming=False, return_json=True
+    ):  # noqa: E501
         """
         Run down-stream inference on samples created from an input file.
         The file should be in the same format as the ones used during training
@@ -369,7 +396,7 @@ class Inferencer:
 
         :return: an iterator(list or generator) of predictions
         :rtype: iter
-        """
+        """  # noqa: E501
         dicts = self.processor.file_to_dicts(file)
         preds_all = self.inference_from_dicts(
             dicts,
@@ -416,30 +443,36 @@ class Inferencer:
 
         :return: an iterator(list or generator) of predictions
         :rtype: iter
-        """
+        """  # noqa: E501
 
-        # whether to aggregate predictions across different samples (e.g. for QA on long texts)
+        # whether to aggregate predictions across different samples (e.g. for QA on long texts)  # noqa: E501
         # TODO remove or adjust after implmenting input objects properly
         # if set(dicts[0].keys()) == {"qas", "context"}:
-        #     warnings.warn("QA Input dictionaries with [qas, context] as keys will be deprecated in the future",
+        #     warnings.warn("QA Input dictionaries with [qas, context] as keys will be deprecated in the future",  # noqa: E501
         #                   DeprecationWarning)
 
         aggregate_preds = False
         if len(self.model.prediction_heads) > 0:
             aggregate_preds = hasattr(self.model.prediction_heads[0], "aggregate_preds")
 
-        if self.process_pool is None:  # multiprocessing disabled (helpful for debugging or using in web frameworks)
-            predictions = self._inference_without_multiprocessing(dicts, return_json, aggregate_preds)
+        if (
+            self.process_pool is None
+        ):  # multiprocessing disabled (helpful for debugging or using in web frameworks)  # noqa: E501
+            predictions = self._inference_without_multiprocessing(
+                dicts, return_json, aggregate_preds
+            )  # noqa: E501
             return predictions
         else:  # use multiprocessing for inference
-            # Calculate values of multiprocessing_chunksize and num_processes if not supplied in the parameters.
-            # The calculation of the values is based on whether streaming mode is enabled. This is only for speed
+            # Calculate values of multiprocessing_chunksize and num_processes if not supplied in the parameters.  # noqa: E501
+            # The calculation of the values is based on whether streaming mode is enabled. This is only for speed  # noqa: E501
             # optimization and do not impact the results of inference.
             if streaming:
                 if multiprocessing_chunksize is None:
-                    logger.warning("Streaming mode is enabled for the Inferencer but multiprocessing_chunksize is not "
-                                   "supplied. Continuing with a default value of 20. Perform benchmarking on your data "
-                                   "to get the optimal chunksize.")
+                    logger.warning(
+                        "Streaming mode is enabled for the Inferencer but multiprocessing_chunksize is not "  # noqa: E501
+                        "supplied. Continuing with a default value of 20. Perform benchmarking on your data "  # noqa: E501
+                        "to get the optimal chunksize."
+                    )
                     multiprocessing_chunksize = 20
             else:
                 if multiprocessing_chunksize is None:
@@ -447,12 +480,15 @@ class Inferencer:
                     multiprocessing_chunksize = _chunk_size
 
             predictions = self._inference_with_multiprocessing(
-                dicts, return_json, aggregate_preds, multiprocessing_chunksize,
+                dicts,
+                return_json,
+                aggregate_preds,
+                multiprocessing_chunksize,
             )
 
             self.processor.log_problematic(self.problematic_sample_ids)
-            # return a generator object if streaming is enabled, else, cast the generator to a list.
-            if not streaming and type(predictions) != list:
+            # return a generator object if streaming is enabled, else, cast the generator to a list.  # noqa: E501
+            if not streaming and type(predictions) != list:  # noqa: E721
                 return list(predictions)
             else:
                 return predictions
@@ -472,10 +508,12 @@ class Inferencer:
 
         :return: list of predictions
         :rtype: list
-        """
+        """  # noqa: E501
         indices = list(range(len(dicts)))
-        dataset, tensor_names, problematic_ids, baskets = self.processor.dataset_from_dicts(
-            dicts, indices=indices, return_baskets=True
+        dataset, tensor_names, problematic_ids, baskets = (
+            self.processor.dataset_from_dicts(  # noqa: E501
+                dicts, indices=indices, return_baskets=True
+            )
         )
         self.problematic_sample_ids = problematic_ids
         if self.benchmarking:
@@ -483,13 +521,15 @@ class Inferencer:
 
         # TODO change format of formatted_preds in QA (list of dicts)
         if aggregate_preds:
-            preds_all = self._get_predictions_and_aggregate(dataset, tensor_names, baskets)
+            preds_all = self._get_predictions_and_aggregate(
+                dataset, tensor_names, baskets
+            )  # noqa: E501
         else:
             preds_all = self._get_predictions(dataset, tensor_names, baskets)
 
         if return_json:
-            # TODO this try catch should be removed when all tasks return prediction objects
-            try:
+            # TODO this try catch should be removed when all tasks return prediction objects  # noqa: E501
+            try:  # noqa: SIM105
                 preds_all = [x.to_json() for x in preds_all]
             except AttributeError:
                 pass
@@ -513,9 +553,9 @@ class Inferencer:
         :type multiprocessing_chunksize: int
         :return: generator object that yield predictions
         :rtype: iter
-        """
+        """  # noqa: E501
 
-        # We group the input dicts into chunks and feed each chunk to a different process
+        # We group the input dicts into chunks and feed each chunk to a different process  # noqa: E501
         # in the pool, where it gets converted to a pytorch dataset
         results = self.process_pool.imap(
             partial(self._create_datasets_chunkwise, processor=self.processor),
@@ -523,13 +563,15 @@ class Inferencer:
             1,
         )
 
-        # Once a process spits out a preprocessed chunk. we feed this dataset directly to the model.
-        # So we don't need to wait until all preprocessing has finished before getting first predictions.
+        # Once a process spits out a preprocessed chunk. we feed this dataset directly to the model.  # noqa: E501
+        # So we don't need to wait until all preprocessing has finished before getting first predictions.  # noqa: E501
         for dataset, tensor_names, problematic_sample_ids, baskets in results:
             self.problematic_sample_ids.update(problematic_sample_ids)
             if dataset is None:
-                logger.error(f"Part of the dataset could not be converted! \n"
-                             f"BE AWARE: The order of predictions will not conform with the input order!")
+                logger.error(
+                    "Part of the dataset could not be converted! \n"
+                    "BE AWARE: The order of predictions will not conform with the input order!"  # noqa: E501
+                )  # noqa: E501
             else:
                 # TODO change format of formatted_preds in QA (list of dicts)
                 if aggregate_preds:
@@ -540,8 +582,8 @@ class Inferencer:
                     predictions = self._get_predictions(dataset, tensor_names, baskets)
 
                 if return_json:
-                    # TODO this try catch should be removed when all tasks return prediction objects
-                    try:
+                    # TODO this try catch should be removed when all tasks return prediction objects  # noqa: E501
+                    try:  # noqa: SIM105
                         predictions = [x.to_json() for x in predictions]
                     except AttributeError:
                         pass
@@ -554,7 +596,9 @@ class Inferencer:
         The resulting datasets of the processes are merged together afterwards"""
         dicts = [d[1] for d in chunk]
         indices = [d[0] for d in chunk]
-        dataset, tensor_names, problematic_sample_ids, baskets = processor.dataset_from_dicts(dicts, indices, return_baskets=True)
+        dataset, tensor_names, problematic_sample_ids, baskets = (
+            processor.dataset_from_dicts(dicts, indices, return_baskets=True)
+        )  # noqa: E501
         return dataset, tensor_names, problematic_sample_ids, baskets
 
     def _get_predictions(self, dataset, tensor_names, baskets):
@@ -567,14 +611,24 @@ class Inferencer:
                         Baskets contain all relevant infos for that.
                         Example: QA - input string to convert the predicted answer from indices back to string space
         :return: list of predictions
-        """
+        """  # noqa: E501
         samples = [s for b in baskets for s in b.samples]
 
         data_loader = NamedDataLoader(
-            dataset=dataset, sampler=SequentialSampler(dataset), batch_size=self.batch_size, tensor_names=tensor_names
+            dataset=dataset,
+            sampler=SequentialSampler(dataset),
+            batch_size=self.batch_size,
+            tensor_names=tensor_names,  # noqa: E501
         )
         preds_all = []
-        for i, batch in enumerate(tqdm(data_loader, desc=f"Inferencing Samples", unit=" Batches", disable=self.disable_tqdm)):
+        for i, batch in enumerate(
+            tqdm(
+                data_loader,
+                desc="Inferencing Samples",
+                unit=" Batches",
+                disable=self.disable_tqdm,
+            )
+        ):  # noqa: E501
             batch = {key: batch[key].to(self.device) for key in batch}
             batch_samples = samples[i * self.batch_size : (i + 1) * self.batch_size]
 
@@ -586,7 +640,8 @@ class Inferencer:
                     samples=batch_samples,
                     tokenizer=self.processor.tokenizer,
                     return_class_probs=self.return_class_probs,
-                    **batch)
+                    **batch,
+                )
                 preds_all += preds
         return preds_all
 
@@ -604,45 +659,58 @@ class Inferencer:
                         Baskets contain all relevant infos for that.
                         Example: QA - input string to convert the predicted answer from indices back to string space
         :return: list of predictions
-        """
+        """  # noqa: E501
 
         data_loader = NamedDataLoader(
-            dataset=dataset, sampler=SequentialSampler(dataset), batch_size=self.batch_size, tensor_names=tensor_names
+            dataset=dataset,
+            sampler=SequentialSampler(dataset),
+            batch_size=self.batch_size,
+            tensor_names=tensor_names,  # noqa: E501
         )
-        # TODO Sometimes this is the preds of one head, sometimes of two. We need a more advanced stacking operation
+        # TODO Sometimes this is the preds of one head, sometimes of two. We need a more advanced stacking operation  # noqa: E501
         # TODO so that preds of the right shape are passed in to formatted_preds
         unaggregated_preds_all = []
 
-        for i, batch in enumerate(tqdm(data_loader, desc=f"Inferencing Samples", unit=" Batches", disable=self.disable_tqdm)):
-
+        for i, batch in enumerate(  # noqa: B007
+            tqdm(
+                data_loader,
+                desc="Inferencing Samples",
+                unit=" Batches",
+                disable=self.disable_tqdm,
+            )
+        ):  # noqa: B007, E501
             batch = {key: batch[key].to(self.device) for key in batch}
 
             # get logits
             with torch.no_grad():
-                # Aggregation works on preds, not logits. We want as much processing happening in one batch + on GPU
+                # Aggregation works on preds, not logits. We want as much processing happening in one batch + on GPU  # noqa: E501
                 # So we transform logits to preds here as well
                 logits = self.model.forward(**batch)
-                # preds = self.model.logits_to_preds(logits, **batch)[0] (This must somehow be useful for SQuAD)
+                # preds = self.model.logits_to_preds(logits, **batch)[0] (This must somehow be useful for SQuAD)  # noqa: E501
                 preds = self.model.logits_to_preds(logits, **batch)
                 unaggregated_preds_all.append(preds)
 
         # In some use cases we want to aggregate the individual predictions.
-        # This is mostly useful, if the input text is longer than the max_seq_len that the model can process.
-        # In QA we can use this to get answers from long input texts by first getting predictions for smaller passages
+        # This is mostly useful, if the input text is longer than the max_seq_len that the model can process.  # noqa: E501
+        # In QA we can use this to get answers from long input texts by first getting predictions for smaller passages  # noqa: E501
         # and then aggregating them here.
 
         # At this point unaggregated preds has shape [n_batches][n_heads][n_samples]
 
-        # can assume that we have only complete docs i.e. all the samples of one doc are in the current chunk
+        # can assume that we have only complete docs i.e. all the samples of one doc are in the current chunk  # noqa: E501
         logits = [None]
-        preds_all = self.model.formatted_preds(logits=logits, # For QA we collected preds per batch and do not want to pass logits
-                                               preds=unaggregated_preds_all,
-                                               baskets=baskets)
+        preds_all = self.model.formatted_preds(
+            logits=logits,  # For QA we collected preds per batch and do not want to pass logits  # noqa: E501
+            preds=unaggregated_preds_all,
+            baskets=baskets,
+        )
         if self.benchmarking:
             self.benchmarker.record("formatted_preds")
         return preds_all
 
-    def extract_vectors(self, dicts, extraction_strategy="cls_token", extraction_layer=-1):
+    def extract_vectors(
+        self, dicts, extraction_strategy="cls_token", extraction_layer=-1
+    ):  # noqa: E501
         """
         Converts a text into vector(s) using the language model only (no prediction head involved).
 
@@ -658,9 +726,11 @@ class Inferencer:
         :param extraction_layer: number of layer from which the embeddings shall be extracted. Default: -1 (very last layer).
         :type extraction_layer: int
         :return: dict of predictions
-        """
+        """  # noqa: E501
 
-        logger.warning("Deprecated! Please use Inferencer.inference_from_dicts() instead.")
+        logger.warning(
+            "Deprecated! Please use Inferencer.inference_from_dicts() instead."
+        )  # noqa: E501
         self.model.prediction_heads = torch.nn.ModuleList([])
         self.model.language_model.extraction_layer = extraction_layer
         self.model.language_model.extraction_strategy = extraction_strategy
@@ -672,46 +742,64 @@ class QAInferencer(Inferencer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.task_type != "question_answering":
-            logger.warning("QAInferencer always has task_type='question_answering' even if another value is provided "
-                           "to Inferencer.load() or QAInferencer()")
+            logger.warning(
+                "QAInferencer always has task_type='question_answering' even if another value is provided "  # noqa: E501
+                "to Inferencer.load() or QAInferencer()"
+            )
             self.task_type = "question_answering"
 
-    def inference_from_dicts(self,
-                             dicts,
-                             return_json=True,
-                             multiprocessing_chunksize=None,
-                             streaming=False) -> Union[List[QAPred], Generator[QAPred, None, None]]:
+    def inference_from_dicts(
+        self, dicts, return_json=True, multiprocessing_chunksize=None, streaming=False
+    ) -> list[QAPred] | Generator[QAPred, None, None]:  # noqa: E501
         if isinstance(self.processor, NaturalQuestionsProcessor):
-            for questions_key in ['questions', 'qas']:
-                if questions_key in dicts[0].keys() and any([len(dict[questions_key]) > 1 for dict in dicts]):
-                    logger.warning('More than one question for document. NaturalQuestions inference will return just the answer to the first question.')
-        return Inferencer.inference_from_dicts(self, dicts, return_json=return_json,
-                                               multiprocessing_chunksize=multiprocessing_chunksize, streaming=streaming)
+            for questions_key in ["questions", "qas"]:
+                if questions_key in dicts[0].keys() and any(  # noqa: SIM118
+                    [len(dict[questions_key]) > 1 for dict in dicts]
+                ):  # noqa: SIM118, E501
+                    logger.warning(
+                        "More than one question for document. NaturalQuestions inference will return just the answer to the first question."  # noqa: E501
+                    )  # noqa: E501
+        return Inferencer.inference_from_dicts(
+            self,
+            dicts,
+            return_json=return_json,
+            multiprocessing_chunksize=multiprocessing_chunksize,
+            streaming=streaming,
+        )  # noqa: E501
 
-    def inference_from_file(self,
-                            file,
-                            multiprocessing_chunksize=None,
-                            streaming=False,
-                            return_json=True) -> Union[List[QAPred], Generator[QAPred, None, None]]:
-        return Inferencer.inference_from_file(self, file, return_json=return_json,
-                                              multiprocessing_chunksize=multiprocessing_chunksize, streaming=streaming)
+    def inference_from_file(
+        self, file, multiprocessing_chunksize=None, streaming=False, return_json=True
+    ) -> list[QAPred] | Generator[QAPred, None, None]:  # noqa: E501
+        return Inferencer.inference_from_file(
+            self,
+            file,
+            return_json=return_json,
+            multiprocessing_chunksize=multiprocessing_chunksize,
+            streaming=streaming,
+        )  # noqa: E501
 
-    def inference_from_objects(self,
-                               objects: List[QAInput],
-                               return_json=True,
-                               multiprocessing_chunksize=None,
-                               streaming=False) -> Union[List[QAPred], Generator[QAPred, None, None]]:
+    def inference_from_objects(
+        self,
+        objects: list[QAInput],
+        return_json=True,
+        multiprocessing_chunksize=None,
+        streaming=False,
+    ) -> list[QAPred] | Generator[QAPred, None, None]:  # noqa: E501
         dicts = [o.to_dict() for o in objects]
-        # TODO investigate this deprecation warning. Timo: I thought we were about to implement Input Objects, then we can and should use inference from (input) objects!
-        #logger.warning("QAInferencer.inference_from_objects() will soon be deprecated. Use QAInferencer.inference_from_dicts() instead")
-        return self.inference_from_dicts(dicts, return_json=return_json,
-                                         multiprocessing_chunksize=multiprocessing_chunksize, streaming=streaming)
+        # TODO investigate this deprecation warning. Timo: I thought we were about to implement Input Objects, then we can and should use inference from (input) objects!  # noqa: E501
+        # logger.warning("QAInferencer.inference_from_objects() will soon be deprecated. Use QAInferencer.inference_from_dicts() instead")  # noqa: E501
+        return self.inference_from_dicts(
+            dicts,
+            return_json=return_json,
+            multiprocessing_chunksize=multiprocessing_chunksize,
+            streaming=streaming,
+        )  # noqa: E501
 
 
 class FasttextInferencer:
     def __init__(self, model, name=None):
         self.model = model
-        self.name = name if name != None else f"anonymous-fasttext"
+        self.name = name if name != None else "anonymous-fasttext"  # noqa: E711
         self.prediction_type = "embedder"
 
     @classmethod
@@ -732,7 +820,7 @@ class FasttextInferencer:
         :param extraction_strategy: Strategy to extract vectors. Choices: 'reduce_mean' (mean sentence vector), 'reduce_max' (max per embedding dim), 'CLS'
         :type extraction_strategy: str
         :return: dict of predictions
-        """
+        """  # noqa: E501
 
         preds_all = []
         for d in dicts:

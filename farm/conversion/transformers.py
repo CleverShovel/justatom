@@ -1,17 +1,26 @@
 import logging
 
-from transformers import AutoModelForSequenceClassification, AutoModelForQuestionAnswering, AutoModelWithLMHead, \
-    AutoModelForTokenClassification
+from transformers import (
+    AutoModelForQuestionAnswering,
+    AutoModelForSequenceClassification,
+    AutoModelForTokenClassification,
+    AutoModelWithLMHead,
+)
 
 from farm.modeling import adaptive_model as am
 from farm.modeling.language_model import LanguageModel
-from farm.modeling.prediction_head import BertLMHead, QuestionAnsweringHead, RegressionHead, TextClassificationHead, \
-    TokenClassificationHead
+from farm.modeling.prediction_head import (
+    BertLMHead,
+    QuestionAnsweringHead,
+    RegressionHead,
+    TextClassificationHead,
+    TokenClassificationHead,
+)
 
 logger = logging.getLogger(__name__)
 
-class Converter:
 
+class Converter:
     @staticmethod
     def convert_to_transformers(adaptive_model):
         """
@@ -21,11 +30,18 @@ class Converter:
         :param adaptive_model: Model to convert.
         :type adaptive_model: AdaptiveModel
         :return: List of huggingface transformers models.
-        """
-        if len(adaptive_model.prediction_heads) == 2 and adaptive_model.prediction_heads[
-            0].model_type == "language_modelling":
-            logger.warning("Currently only the Masked Language Modeling component of the prediction head is converted, "
-                           "not the Next Sentence Prediction or Sentence Order Prediction components")
+        """  # noqa: E501
+        if (
+            len(adaptive_model.prediction_heads) == 2
+            and adaptive_model.prediction_heads[  # noqa: E501
+                0
+            ].model_type
+            == "language_modelling"
+        ):
+            logger.warning(
+                "Currently only the Masked Language Modeling component of the prediction head is converted, "  # noqa: E501
+                "not the Next Sentence Prediction or Sentence Order Prediction components"  # noqa: E501
+            )  # noqa: E501
 
         converted_models = []
 
@@ -33,36 +49,50 @@ class Converter:
         for prediction_head in adaptive_model.prediction_heads:
             if len(prediction_head.layer_dims) != 2:
                 logger.error(
-                    f"Currently conversion only works for PredictionHeads that are a single layer Feed Forward NN with dimensions [LM_output_dim, number_classes].\n"
-                    f"            Your PredictionHead has {str(prediction_head.layer_dims)} dimensions."
+                    f"Currently conversion only works for PredictionHeads that are a single layer Feed Forward NN with dimensions [LM_output_dim, number_classes].\n"  # noqa: E501
+                    f"            Your PredictionHead has {str(prediction_head.layer_dims)} dimensions."  # noqa: E501
                 )
                 continue
 
             if prediction_head.model_type in ["text_classification", "regression"]:
-                transformers_model = Converter._convert_to_transformers_classification_regression(adaptive_model,
-                                                                                                  prediction_head)
+                transformers_model = (
+                    Converter._convert_to_transformers_classification_regression(
+                        adaptive_model,  # noqa: E501
+                        prediction_head,
+                    )
+                )
                 converted_models.append(transformers_model)
 
             elif prediction_head.model_type == "span_classification":
-                transformers_model = Converter._convert_to_transformers_qa(adaptive_model, prediction_head)
+                transformers_model = Converter._convert_to_transformers_qa(
+                    adaptive_model, prediction_head
+                )  # noqa: E501
                 converted_models.append(transformers_model)
 
             elif prediction_head.model_type == "language_modelling":
-                transformers_model = Converter._convert_to_transformers_lm(adaptive_model, prediction_head)
+                transformers_model = Converter._convert_to_transformers_lm(
+                    adaptive_model, prediction_head
+                )  # noqa: E501
                 converted_models.append(transformers_model)
 
             elif prediction_head.model_type == "token_classification":
-                transformers_model = Converter._convert_to_transformers_ner(adaptive_model, prediction_head)
+                transformers_model = Converter._convert_to_transformers_ner(
+                    adaptive_model, prediction_head
+                )  # noqa: E501
                 converted_models.append(transformers_model)
 
             else:
-                logger.error(f"FARM -> Transformers conversion is not supported yet for"
-                             f" prediction heads of type {prediction_head.model_type}")
+                logger.error(
+                    f"FARM -> Transformers conversion is not supported yet for"
+                    f" prediction heads of type {prediction_head.model_type}"
+                )
 
         return converted_models
 
     @staticmethod
-    def convert_from_transformers(model_name_or_path, device, revision=None, task_type=None, processor=None):
+    def convert_from_transformers(
+        model_name_or_path, device, revision=None, task_type=None, processor=None
+    ):  # noqa: E501
         """
         Load a (downstream) model from huggingface's transformers format. Use cases:
          - continue training in FARM (e.g. take a squad QA model and fine-tune on your own data)
@@ -86,7 +116,7 @@ class Converter:
         :param processor: populates prediction head with information coming from tasks
         :type processor: Processor
         :return: AdaptiveModel
-        """
+        """  # noqa: E501
 
         lm = LanguageModel.load(model_name_or_path, revision=revision)
         if task_type is None:
@@ -104,48 +134,83 @@ class Converter:
             elif "TokenClassification" in architecture:
                 task_type = "ner"
             else:
-                logger.error("Could not infer task type from model config. Please provide task type manually. "
-                             "('lm', 'question_answering', 'regression', 'text_classification', 'ner' or 'embeddings')")
+                logger.error(
+                    "Could not infer task type from model config. Please provide task type manually. "  # noqa: E501
+                    "('lm', 'question_answering', 'regression', 'text_classification', 'ner' or 'embeddings')"  # noqa: E501
+                )  # noqa: E501
 
         if task_type == "lm":
             ph = BertLMHead.load(model_name_or_path, revision=revision)
-            adaptive_model = am.AdaptiveModel(language_model=lm, prediction_heads=[ph], embeds_dropout_prob=0.1,
-                                              lm_output_types="per_token", device=device)
+            adaptive_model = am.AdaptiveModel(
+                language_model=lm,
+                prediction_heads=[ph],
+                embeds_dropout_prob=0.1,  # noqa: E501
+                lm_output_types="per_token",
+                device=device,
+            )  # noqa: E501
 
         elif task_type == "question_answering":
             ph = QuestionAnsweringHead.load(model_name_or_path, revision=revision)
-            adaptive_model = am.AdaptiveModel(language_model=lm, prediction_heads=[ph], embeds_dropout_prob=0.1,
-                                              lm_output_types="per_token", device=device)
+            adaptive_model = am.AdaptiveModel(
+                language_model=lm,
+                prediction_heads=[ph],
+                embeds_dropout_prob=0.1,  # noqa: E501
+                lm_output_types="per_token",
+                device=device,
+            )  # noqa: E501
 
         elif task_type == "regression":
             if "roberta" in model_name_or_path:
-                # The RobertaClassificationHead has components: input2dense, dropout, tanh, dense2output
-                # The tanh function cannot be mapped to current FARM style linear Feed Forward PredictionHeads.
-                logger.error("Conversion for Regression with Roberta or XLMRoberta not possible at the moment.")
+                # The RobertaClassificationHead has components: input2dense, dropout, tanh, dense2output  # noqa: E501
+                # The tanh function cannot be mapped to current FARM style linear Feed Forward PredictionHeads.  # noqa: E501
+                logger.error(
+                    "Conversion for Regression with Roberta or XLMRoberta not possible at the moment."  # noqa: E501
+                )  # noqa: E501
                 raise NotImplementedError
             ph = RegressionHead.load(model_name_or_path)
-            adaptive_model = am.AdaptiveModel(language_model=lm, prediction_heads=[ph], embeds_dropout_prob=0.1,
-                                              lm_output_types="per_sequence", device=device)
+            adaptive_model = am.AdaptiveModel(
+                language_model=lm,
+                prediction_heads=[ph],
+                embeds_dropout_prob=0.1,  # noqa: E501
+                lm_output_types="per_sequence",
+                device=device,
+            )  # noqa: E501
 
         elif task_type == "text_classification":
             if "roberta" in model_name_or_path:
-                # The RobertaClassificationHead has components: input2dense, dropout, tanh, dense2output
-                # The tanh function cannot be mapped to current FARM style linear Feed Forward PredictionHeads.
+                # The RobertaClassificationHead has components: input2dense, dropout, tanh, dense2output  # noqa: E501
+                # The tanh function cannot be mapped to current FARM style linear Feed Forward PredictionHeads.  # noqa: E501
                 logger.error(
-                    "Conversion for Text Classification with Roberta or XLMRoberta not possible at the moment.")
+                    "Conversion for Text Classification with Roberta or XLMRoberta not possible at the moment."  # noqa: E501
+                )  # noqa: E501
                 raise NotImplementedError
             ph = TextClassificationHead.load(model_name_or_path, revision=revision)
-            adaptive_model = am.AdaptiveModel(language_model=lm, prediction_heads=[ph], embeds_dropout_prob=0.1,
-                                              lm_output_types="per_sequence", device=device)
+            adaptive_model = am.AdaptiveModel(
+                language_model=lm,
+                prediction_heads=[ph],
+                embeds_dropout_prob=0.1,  # noqa: E501
+                lm_output_types="per_sequence",
+                device=device,
+            )  # noqa: E501
 
         elif task_type == "ner":
             ph = TokenClassificationHead.load(model_name_or_path, revision=revision)
-            adaptive_model = am.AdaptiveModel(language_model=lm, prediction_heads=[ph], embeds_dropout_prob=0.1,
-                                              lm_output_types="per_token", device=device)
+            adaptive_model = am.AdaptiveModel(
+                language_model=lm,
+                prediction_heads=[ph],
+                embeds_dropout_prob=0.1,  # noqa: E501
+                lm_output_types="per_token",
+                device=device,
+            )  # noqa: E501
 
         elif task_type == "embeddings":
-            adaptive_model = am.AdaptiveModel(language_model=lm, prediction_heads=[], embeds_dropout_prob=0.1,
-                                              lm_output_types=["per_token", "per_sequence"], device=device)
+            adaptive_model = am.AdaptiveModel(
+                language_model=lm,
+                prediction_heads=[],
+                embeds_dropout_prob=0.1,  # noqa: E501
+                lm_output_types=["per_token", "per_sequence"],
+                device=device,
+            )  # noqa: E501
 
         if processor:
             adaptive_model.connect_heads_with_processor(processor.tasks)
@@ -153,30 +218,51 @@ class Converter:
         return adaptive_model
 
     @staticmethod
-    def _convert_to_transformers_classification_regression(adaptive_model, prediction_head):
+    def _convert_to_transformers_classification_regression(
+        adaptive_model, prediction_head
+    ):  # noqa: E501
         if adaptive_model.language_model.model.base_model_prefix == "roberta":
-            # Classification Heads in transformers have different architecture across Language Model variants
-            # The RobertaClassificationhead has components: input2dense, dropout, tanh, dense2output
-            # The tanh function cannot be mapped to current FARM style linear Feed Forward ClassificationHeads.
-            # So conversion for this type cannot work. We would need a compatible FARM RobertaClassificationHead
-            logger.error("Conversion for Text Classification and Regression with Roberta or XLMRoberta "
-                         "not possible at the moment.")
+            # Classification Heads in transformers have different architecture across Language Model variants  # noqa: E501
+            # The RobertaClassificationhead has components: input2dense, dropout, tanh, dense2output  # noqa: E501
+            # The tanh function cannot be mapped to current FARM style linear Feed Forward ClassificationHeads.  # noqa: E501
+            # So conversion for this type cannot work. We would need a compatible FARM RobertaClassificationHead  # noqa: E501
+            logger.error(
+                "Conversion for Text Classification and Regression with Roberta or XLMRoberta "  # noqa: E501
+                "not possible at the moment."
+            )
 
         # add more info to config
-        adaptive_model.language_model.model.config.num_labels = prediction_head.num_labels
-        adaptive_model.language_model.model.config.id2label = {id: label for id, label in
-                                                               enumerate(prediction_head.label_list)}
-        adaptive_model.language_model.model.config.label2id = {label: id for id, label in
-                                                               enumerate(prediction_head.label_list)}
-        adaptive_model.language_model.model.config.finetuning_task = prediction_head.model_type
-        adaptive_model.language_model.model.config.language = adaptive_model.language_model.language
+        adaptive_model.language_model.model.config.num_labels = (
+            prediction_head.num_labels
+        )  # noqa: E501
+        adaptive_model.language_model.model.config.id2label = {
+            id: label
+            for id, label in enumerate(prediction_head.label_list)  # noqa: E501
+        }
+        adaptive_model.language_model.model.config.label2id = {
+            label: id
+            for id, label in enumerate(prediction_head.label_list)  # noqa: E501
+        }
+        adaptive_model.language_model.model.config.finetuning_task = (
+            prediction_head.model_type
+        )  # noqa: E501
+        adaptive_model.language_model.model.config.language = (
+            adaptive_model.language_model.language
+        )  # noqa: E501
 
         # init model
-        transformers_model = AutoModelForSequenceClassification.from_config(adaptive_model.language_model.model.config)
+        transformers_model = AutoModelForSequenceClassification.from_config(
+            adaptive_model.language_model.model.config
+        )  # noqa: E501
         # transfer weights for language model + prediction head
-        setattr(transformers_model, transformers_model.base_model_prefix, adaptive_model.language_model.model)
+        setattr(
+            transformers_model,
+            transformers_model.base_model_prefix,
+            adaptive_model.language_model.model,
+        )  # noqa: E501
         transformers_model.classifier.load_state_dict(
-            prediction_head.feed_forward.feed_forward[0].state_dict())
+            prediction_head.feed_forward.feed_forward[0].state_dict()
+        )
 
         return transformers_model
 
@@ -187,11 +273,18 @@ class Converter:
         # remove pooling layer
         adaptive_model.language_model.model.pooler = None
         # init model
-        transformers_model = AutoModelForQuestionAnswering.from_config(adaptive_model.language_model.model.config)
+        transformers_model = AutoModelForQuestionAnswering.from_config(
+            adaptive_model.language_model.model.config
+        )  # noqa: E501
         # transfer weights for language model + prediction head
-        setattr(transformers_model, transformers_model.base_model_prefix, adaptive_model.language_model.model)
+        setattr(
+            transformers_model,
+            transformers_model.base_model_prefix,
+            adaptive_model.language_model.model,
+        )  # noqa: E501
         transformers_model.qa_outputs.load_state_dict(
-            prediction_head.feed_forward.feed_forward[0].state_dict())
+            prediction_head.feed_forward.feed_forward[0].state_dict()
+        )
 
         return transformers_model
 
@@ -200,16 +293,24 @@ class Converter:
         # remove pooling layer
         adaptive_model.language_model.model.pooler = None
         # init model
-        transformers_model = AutoModelWithLMHead.from_config(adaptive_model.language_model.model.config)
+        transformers_model = AutoModelWithLMHead.from_config(
+            adaptive_model.language_model.model.config
+        )  # noqa: E501
         # transfer weights for language model + prediction head
-        setattr(transformers_model, transformers_model.base_model_prefix, adaptive_model.language_model.model)
+        setattr(
+            transformers_model,
+            transformers_model.base_model_prefix,
+            adaptive_model.language_model.model,
+        )  # noqa: E501
         # Adding decoder bias (required for conversion to transformers)
         prediction_head.decoder.bias = prediction_head.bias
 
         ph_state_dict = prediction_head.state_dict()
         ph_state_dict["transform.dense.weight"] = ph_state_dict.pop("dense.weight")
         ph_state_dict["transform.dense.bias"] = ph_state_dict.pop("dense.bias")
-        ph_state_dict["transform.LayerNorm.weight"] = ph_state_dict.pop("LayerNorm.weight")
+        ph_state_dict["transform.LayerNorm.weight"] = ph_state_dict.pop(
+            "LayerNorm.weight"
+        )  # noqa: E501
         ph_state_dict["transform.LayerNorm.bias"] = ph_state_dict.pop("LayerNorm.bias")
         transformers_model.cls.predictions.load_state_dict(ph_state_dict)
 
@@ -220,19 +321,36 @@ class Converter:
         # remove pooling layer
         adaptive_model.language_model.model.pooler = None
         # add more info to config
-        adaptive_model.language_model.model.config.num_labels = prediction_head.num_labels
-        adaptive_model.language_model.model.config.id2label = {id: label for id, label in
-                                                               enumerate(prediction_head.label_list)}
-        adaptive_model.language_model.model.config.label2id = {label: id for id, label in
-                                                               enumerate(prediction_head.label_list)}
-        adaptive_model.language_model.model.config.finetuning_task = "token_classification"
-        adaptive_model.language_model.model.config.language = adaptive_model.language_model.language
+        adaptive_model.language_model.model.config.num_labels = (
+            prediction_head.num_labels
+        )  # noqa: E501
+        adaptive_model.language_model.model.config.id2label = {
+            id: label
+            for id, label in enumerate(prediction_head.label_list)  # noqa: E501
+        }
+        adaptive_model.language_model.model.config.label2id = {
+            label: id
+            for id, label in enumerate(prediction_head.label_list)  # noqa: E501
+        }
+        adaptive_model.language_model.model.config.finetuning_task = (
+            "token_classification"  # noqa: E501
+        )
+        adaptive_model.language_model.model.config.language = (
+            adaptive_model.language_model.language
+        )  # noqa: E501
 
         # init model
-        transformers_model = AutoModelForTokenClassification.from_config(adaptive_model.language_model.model.config)
+        transformers_model = AutoModelForTokenClassification.from_config(
+            adaptive_model.language_model.model.config
+        )  # noqa: E501
         # transfer weights for language model + prediction head
-        setattr(transformers_model, transformers_model.base_model_prefix, adaptive_model.language_model.model)
+        setattr(
+            transformers_model,
+            transformers_model.base_model_prefix,
+            adaptive_model.language_model.model,
+        )  # noqa: E501
         transformers_model.classifier.load_state_dict(
-            prediction_head.feed_forward.feed_forward[0].state_dict())
+            prediction_head.feed_forward.feed_forward[0].state_dict()
+        )
 
         return transformers_model

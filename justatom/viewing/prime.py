@@ -1,25 +1,21 @@
-from typing import Any, List, Optional, Union
+from typing import Any
 
 import altair as alt
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import polars as pl
-from loguru import logger
 from plotly.subplots import make_subplots
 from typing_extensions import Self
 
-from justatom.etc.types import LineSmoothChoice
 from justatom.viewing.mask import IChart
 
 
 class ILineChart(IChart):
-
     def __init__(self):
         super().__init__()
 
     def _check_column(self, col: str, columns: list, param_name: str) -> bool:
-
         return True
 
     def _check_smoothing_options(self):
@@ -28,16 +24,16 @@ class ILineChart(IChart):
     def view(
         self,
         df: pl.DataFrame,
-        x_axis: Optional[str] = None,
-        x_title: Optional[str] = "X",
-        y_axis: Optional[str] = "y",
-        y_title: Optional[str] = "Y",
-        scale_domain: Optional[List[int]] = None,
-        overlay_mark: Optional[bool] = False,
-        smooth: Optional[Union[int, float]] = 1,
-        smooth_choice: Optional[str] = None,
-        return_only_smooth: Optional[bool] = False,
-        smooth_color: Optional[str] = "red",
+        x_axis: str | None = None,
+        x_title: str | None = "X",
+        y_axis: str | None = "y",
+        y_title: str | None = "Y",
+        scale_domain: list[int] | None = None,
+        overlay_mark: bool | None = False,
+        smooth: int | float | None = 1,
+        smooth_choice: str | None = None,
+        return_only_smooth: bool | None = False,
+        smooth_color: str | None = "red",
     ) -> Self:
         columns = df.columns
         x_axis = x_axis or "row_nr"
@@ -85,13 +81,12 @@ class ILineChart(IChart):
 
 
 class PlotlyScatterChart(IChart):
-
     def view(
         self,
-        data: Union[pl.DataFrame, pd.DataFrame],
+        data: pl.DataFrame | pd.DataFrame,
         label_to_view: str = "title",
         max_label_length: int = 22,
-        logo_path: Optional[str] = None,
+        logo_path: str | None = None,
         **props,
     ) -> Any:
         pl_data = data.rename({"label": label_to_view})
@@ -118,7 +113,7 @@ class PlotlyScatterChart(IChart):
             fig.add_layout_image(
                 dict(
                     source=str(
-                        Path(os.getcwd()) / ".data" / "polaroids.ai.logo.png"
+                        Path(os.getcwd()) / ".data" / "polaroids.ai.logo.png"  # noqa: F821
                     ),  # Path to your logo file
                     xref="paper",
                     yref="paper",
@@ -156,8 +151,7 @@ class PlotlyScatterChart(IChart):
 
 
 class PlotlyBarChart(IChart):
-
-    def view(self, data: Union[pl.DataFrame, pd.DataFrame], **props) -> Any:
+    def view(self, data: pl.DataFrame | pd.DataFrame, **props) -> Any:
         self.chart = px.bar(data, **props)
         return self.chart
 
@@ -208,7 +202,7 @@ class PlotlyGroupedBarChart(IChart):
 
     def view(
         self,
-        data: Union[pl.DataFrame, pd.DataFrame],
+        data: pl.DataFrame | pd.DataFrame,
         histfunc="count",
         histnorm="percent",
         **props,
@@ -222,7 +216,7 @@ class PlotlyGroupedBarChart(IChart):
             or self.distance_col not in data.schema
         ):
             raise KeyError(
-                f"one of columns ({self.group_col_a}, {self.group_col_b}, {self.distance_col}) is not found in data"
+                f"one of columns ({self.group_col_a}, {self.group_col_b}, {self.distance_col}) is not found in data"  # noqa: E501
             )
 
         figs = []
@@ -235,7 +229,6 @@ class PlotlyGroupedBarChart(IChart):
 
         for pos_a in range(n):
             for pos_b in range(m):
-
                 sub_df = self._prepare_group_inter_dataframe(
                     data, cuts_group_a[pos_a], cuts_group_b[pos_b]
                 )

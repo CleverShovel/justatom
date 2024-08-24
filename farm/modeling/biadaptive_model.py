@@ -1,21 +1,12 @@
-import copy
-import json
 import logging
 import os
-from argparse import Namespace
 from pathlib import Path
 
-import multiprocessing
-import numpy
-import torch
 from torch import nn
 
-from farm.data_handler.processor import TextSimilarityProcessor
-from farm.data_handler.data_silo import DataSilo
 from farm.modeling.language_model import LanguageModel
 from farm.modeling.prediction_head import PredictionHead, TextSimilarityHead
-from farm.modeling.tokenization import Tokenizer
-from farm.utils import WANDBLogger as MlLogger, stack
+from farm.utils import WANDBLogger as MlLogger
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +19,7 @@ class BaseBiAdaptiveModel:
     subclasses = {}
 
     def __init_subclass__(cls, **kwargs):
-        """ This automatically keeps track of all available subclasses.
+        """This automatically keeps track of all available subclasses.
         Enables generic load() for all specific AdaptiveModel implementation.
         """
         super().__init_subclass__(**kwargs)
@@ -45,7 +36,7 @@ class BaseBiAdaptiveModel:
 
         :param kwargs: arguments to pass for loading the model.
         :return: instance of a model
-        """
+        """  # noqa: E501
         if (Path(kwargs["load_dir"]) / "model.onnx").is_file():
             model = cls.subclasses["ONNXBiAdaptiveModel"].load(**kwargs)
         else:
@@ -64,7 +55,7 @@ class BaseBiAdaptiveModel:
         """
         all_preds = []
         # collect preds from all heads
-        for head, logits_for_head in zip(self.prediction_heads, logits):
+        for head, logits_for_head in zip(self.prediction_heads, logits, strict=False):
             preds = head.logits_to_preds(logits=logits_for_head, **kwargs)
             all_preds.append(preds)
         return all_preds
@@ -83,8 +74,8 @@ class BaseBiAdaptiveModel:
 
         if n_heads == 1:
             preds_final = []
-            # This try catch is to deal with the fact that sometimes we collect preds before passing it to
-            # formatted_preds (see Inferencer._get_predictions_and_aggregate()) and sometimes we don't
+            # This try catch is to deal with the fact that sometimes we collect preds before passing it to  # noqa: E501
+            # formatted_preds (see Inferencer._get_predictions_and_aggregate()) and sometimes we don't  # noqa: E501
             # (see Inferencer._get_predictions())
             try:
                 preds = kwargs["preds"]
@@ -96,10 +87,10 @@ class BaseBiAdaptiveModel:
             head = self.prediction_heads[0]
             logits_for_head = logits[0]
             preds = head.formatted_preds(logits=logits_for_head, **kwargs)
-            # TODO This is very messy - we need better definition of what the output should look like
-            if type(preds) == list:
+            # TODO This is very messy - we need better definition of what the output should look like  # noqa: E501
+            if type(preds) == list:  # noqa: E721
                 preds_final += preds
-            elif type(preds) == dict and "predictions" in preds:
+            elif type(preds) == dict and "predictions" in preds:  # noqa: E721
                 preds_final.append(preds)
         return preds_final
 
@@ -110,16 +101,18 @@ class BaseBiAdaptiveModel:
         :param tasks: A dictionary where the keys are the names of the tasks and the values are the details of the task (e.g. label_list, metric, tensor name)
         :param require_labels: If True, an error will be thrown when a task is not supplied with labels)
         :return:
-        """
+        """  # noqa: E501
 
         for head in self.prediction_heads:
             head.label_tensor_name = tasks[head.task_name]["label_tensor_name"]
             label_list = tasks[head.task_name]["label_list"]
             if not label_list and require_labels:
-                raise Exception(f"The task \'{head.task_name}\' is missing a valid set of labels")
+                raise Exception(
+                    f"The task '{head.task_name}' is missing a valid set of labels"
+                )  # noqa: E501
             label_list = tasks[head.task_name]["label_list"]
             head.label_list = label_list
-            num_labels = len(label_list)
+            num_labels = len(label_list)  # noqa: F841
             head.metric = tasks[head.task_name]["metric"]
 
     @classmethod
@@ -127,9 +120,7 @@ class BaseBiAdaptiveModel:
         load_dir = Path(load_dir)
         files = os.listdir(load_dir)
         config_files = [
-            load_dir / f
-            for f in files
-            if "config.json" in f and "prediction_head" in f
+            load_dir / f for f in files if "config.json" in f and "prediction_head" in f
         ]
         # sort them to get correct order in case of multiple prediction heads
         config_files.sort()
@@ -145,8 +136,8 @@ def loss_per_head_sum(loss_per_head, global_step=None, batch=None):
 
 
 class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
-    """ PyTorch implementation containing all the modelling needed for your NLP task. Combines 2 language
-    models for representation of 2 sequences and a prediction head. Allows for gradient flow back to the 2 language model components."""
+    """PyTorch implementation containing all the modelling needed for your NLP task. Combines 2 language
+    models for representation of 2 sequences and a prediction head. Allows for gradient flow back to the 2 language model components."""  # noqa: E501
 
     def __init__(
         self,
@@ -155,8 +146,8 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
         prediction_heads,
         embeds_dropout_prob=0.1,
         device="cuda",
-        lm1_output_types=["per_sequence"],
-        lm2_output_types=["per_sequence"],
+        lm1_output_types=["per_sequence"],  # noqa: B006
+        lm2_output_types=["per_sequence"],  # noqa: B006
         loss_aggregation_fn=None,
     ):
         """
@@ -193,9 +184,9 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
                                     Note: The loss at this stage is per sample, i.e one tensor of
                                     shape (batchsize) per prediction head.
         :type loss_aggregation_fn: function
-        """
+        """  # noqa: E501
 
-        super(BiAdaptiveModel, self).__init__()
+        super(BiAdaptiveModel, self).__init__()  # noqa: UP008
         self.device = device
         self.language_model1 = language_model1.to(device)
         self.lm1_output_dims = language_model1.get_output_dims()
@@ -203,15 +194,21 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
         self.lm2_output_dims = language_model2.get_output_dims()
         self.dropout1 = nn.Dropout(embeds_dropout_prob)
         self.dropout2 = nn.Dropout(embeds_dropout_prob)
-        self.prediction_heads = nn.ModuleList([ph.to(device) for ph in prediction_heads])
+        self.prediction_heads = nn.ModuleList(
+            [ph.to(device) for ph in prediction_heads]
+        )  # noqa: E501
         self.lm1_output_types = (
-            [lm1_output_types] if isinstance(lm1_output_types, str) else lm1_output_types
+            [lm1_output_types]
+            if isinstance(lm1_output_types, str)
+            else lm1_output_types  # noqa: E501
         )
         self.lm2_output_types = (
-            [lm2_output_types] if isinstance(lm2_output_types, str) else lm2_output_types
+            [lm2_output_types]
+            if isinstance(lm2_output_types, str)
+            else lm2_output_types  # noqa: E501
         )
         self.log_params()
-        # default loss aggregation function is a simple sum (without using any of the optional params)
+        # default loss aggregation function is a simple sum (without using any of the optional params)  # noqa: E501
         if not loss_aggregation_fn:
             loss_aggregation_fn = loss_per_head_sum
         self.loss_aggregation_fn = loss_aggregation_fn
@@ -222,7 +219,7 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
 
         :param save_dir: path to save to
         :type save_dir: Path
-        """
+        """  # noqa: E501
         os.makedirs(save_dir, exist_ok=True)
         if not os.path.exists(Path.joinpath(save_dir, Path(lm1_name))):
             os.makedirs(Path.joinpath(save_dir, Path(lm1_name)))
@@ -235,7 +232,15 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
             ph.save(save_dir, i)
 
     @classmethod
-    def load(cls, load_dir, device, strict=False, lm1_name="query", lm2_name="passage", processor=None):
+    def load(
+        cls,
+        load_dir,
+        device,
+        strict=False,
+        lm1_name="query",
+        lm2_name="passage",
+        processor=None,
+    ):  # noqa: E501
         """
         Loads a BiAdaptiveModel from a directory. The directory must contain:
 
@@ -265,7 +270,7 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
         :type strict: bool
         :param processor: populates prediction head with information coming from tasks
         :type processor: Processor
-        """
+        """  # noqa: E501
         # Language Model
         if lm1_name:
             language_model1 = LanguageModel.load(os.path.join(load_dir, lm1_name))
@@ -298,14 +303,17 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
         :param logits: logits, can vary in shape and type, depending on task.
         :type logits: object
         :return: The per sample per prediciton head loss whose first two dimensions have length n_pred_heads, batch_size
-        """
+        """  # noqa: E501
         all_losses = []
-        for head, logits_for_one_head in zip(self.prediction_heads, logits):
+        for head, logits_for_one_head in zip(
+            self.prediction_heads, logits, strict=False
+        ):  # noqa: E501
             # check if PredictionHead connected to Processor
-            assert hasattr(head, "label_tensor_name"), \
-                (f"Label_tensor_names are missing inside the {head.task_name} Prediction Head. Did you connect the model"
-                " with the processor through either 'model.connect_heads_with_processor(processor.tasks)'"
-                " or by passing the processor to the Adaptive Model?")
+            assert hasattr(head, "label_tensor_name"), (
+                f"Label_tensor_names are missing inside the {head.task_name} Prediction Head. Did you connect the model"  # noqa: E501
+                " with the processor through either 'model.connect_heads_with_processor(processor.tasks)'"  # noqa: E501
+                " or by passing the processor to the Adaptive Model?"
+            )
             all_losses.append(head.logits_to_loss(logits=logits_for_one_head, **kwargs))
         return all_losses
 
@@ -321,11 +329,13 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
                        Note: Contains the batch (as dict of tensors), when called from Trainer.train().
         :type kwargs: object
         :return loss: torch.tensor that is the per sample loss (len: batch_size)
-        """
+        """  # noqa: E501
         all_losses = self.logits_to_loss_per_head(logits, **kwargs)
         # This aggregates the loss per sample across multiple prediction heads
-        # Default is sum(), but you can configure any fn that takes [Tensor, Tensor ...] and returns [Tensor]
-        loss = self.loss_aggregation_fn(all_losses, global_step=global_step, batch=kwargs)
+        # Default is sum(), but you can configure any fn that takes [Tensor, Tensor ...] and returns [Tensor]  # noqa: E501
+        loss = self.loss_aggregation_fn(
+            all_losses, global_step=global_step, batch=kwargs
+        )  # noqa: E501
         return loss
 
     def prepare_labels(self, **kwargs):
@@ -353,7 +363,7 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
 
         :param kwargs: Holds all arguments that need to be passed to both the language models and prediction head(s).
         :return: all logits as torch.tensor or multiple tensors.
-        """
+        """  # noqa: E501
 
         # Run forward pass of both language models
         pooled_output = self.forward_lm(**kwargs)
@@ -361,24 +371,35 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
         # Run forward pass of (multiple) prediction heads using the output from above
         all_logits = []
         if len(self.prediction_heads) > 0:
-            for head, lm1_out, lm2_out in zip(self.prediction_heads, self.lm1_output_types, self.lm2_output_types):
+            for head, lm1_out, lm2_out in zip(
+                self.prediction_heads,
+                self.lm1_output_types,
+                self.lm2_output_types,
+                strict=False,
+            ):  # noqa: E501
                 # Choose relevant vectors from LM as output and perform dropout
                 if pooled_output[0] is not None:
-                    if lm1_out == "per_sequence" or lm1_out == "per_sequence_continuous":
+                    if (
+                        lm1_out == "per_sequence"
+                        or lm1_out == "per_sequence_continuous"
+                    ):  # noqa: E501
                         output1 = self.dropout1(pooled_output[0])
                     else:
                         raise ValueError(
-                            "Unknown extraction strategy from BiAdaptive language_model1: {}".format(lm1_out)
+                            f"Unknown extraction strategy from BiAdaptive language_model1: {lm1_out}"  # noqa: E501
                         )
                 else:
                     output1 = None
 
                 if pooled_output[1] is not None:
-                    if lm2_out == "per_sequence" or lm2_out == "per_sequence_continuous":
+                    if (
+                        lm2_out == "per_sequence"
+                        or lm2_out == "per_sequence_continuous"
+                    ):  # noqa: E501
                         output2 = self.dropout2(pooled_output[1])
                     else:
                         raise ValueError(
-                            "Unknown extraction strategy from BiAdaptive language_model2: {}".format(lm2_out)
+                            f"Unknown extraction strategy from BiAdaptive language_model2: {lm2_out}"  # noqa: E501
                         )
                 else:
                     output2 = None
@@ -386,8 +407,8 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
                 embedding1, embedding2 = head(output1, output2)
                 all_logits.append(tuple([embedding1, embedding2]))
         else:
-            # just return LM output (e.g. useful for extracting embeddings at inference time)
-            all_logits.append((pooled_output))
+            # just return LM output (e.g. useful for extracting embeddings at inference time)  # noqa: E501
+            all_logits.append(pooled_output)
 
         return all_logits
 
@@ -399,12 +420,12 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
         :return: 2 tensors of pooled_output from the 2 language models
         """
         pooled_output = [None, None]
-        if "query_input_ids" in kwargs.keys():
-            # if self.language_model1.get_language_model_class(self.language_model1.name) == 'DistilBert':
-            #     pooled_output1, hidden_states1 = self.language_model1(input_ids=kwargs['query_input_ids'], padding_mask=kwargs['query_attention_mask'])
+        if "query_input_ids" in kwargs.keys():  # noqa: SIM118
+            # if self.language_model1.get_language_model_class(self.language_model1.name) == 'DistilBert':  # noqa: E501
+            #     pooled_output1, hidden_states1 = self.language_model1(input_ids=kwargs['query_input_ids'], padding_mask=kwargs['query_attention_mask'])  # noqa: E501
             pooled_output1, hidden_states1 = self.language_model1(**kwargs)
             pooled_output[0] = pooled_output1
-        if "passage_input_ids" in kwargs.keys():
+        if "passage_input_ids" in kwargs.keys():  # noqa: SIM118
             pooled_output2, hidden_states2 = self.language_model2(**kwargs)
             pooled_output[1] = pooled_output2
 
@@ -422,65 +443,103 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
             "lm2_name": self.language_model2.name,
             "lm2_output_types": ",".join(self.lm2_output_types),
             "prediction_heads": ",".join(
-                [head.__class__.__name__ for head in self.prediction_heads])
+                [head.__class__.__name__ for head in self.prediction_heads]
+            ),
         }
         try:
             MlLogger.log_params(params)
         except Exception as e:
             logger.warning(f"ML logging didn't work: {e}")
-    
+
     def verify_vocab_size(self, vocab_size1, vocab_size2):
-        """ Verifies that the model fits to the tokenizer vocabulary.
-        They could diverge in case of custom vocabulary added via tokenizer.add_tokens()"""
+        """Verifies that the model fits to the tokenizer vocabulary.
+        They could diverge in case of custom vocabulary added via tokenizer.add_tokens()"""  # noqa: E501
 
-        model1_vocab_len = self.language_model1.model.resize_token_embeddings(new_num_tokens=None).num_embeddings
+        model1_vocab_len = self.language_model1.model.resize_token_embeddings(
+            new_num_tokens=None
+        ).num_embeddings  # noqa: E501
 
-        msg = f"Vocab size of tokenizer {vocab_size1} doesn't match with model {model1_vocab_len}. " \
-              "If you added a custom vocabulary to the tokenizer, " \
-              "make sure to supply 'n_added_tokens' to LanguageModel.load() and BertStyleLM.load()"
+        msg = (
+            f"Vocab size of tokenizer {vocab_size1} doesn't match with model {model1_vocab_len}. "  # noqa: E501
+            "If you added a custom vocabulary to the tokenizer, "
+            "make sure to supply 'n_added_tokens' to LanguageModel.load() and BertStyleLM.load()"  # noqa: E501
+        )  # noqa: E501
         assert vocab_size1 == model1_vocab_len, msg
 
-        model2_vocab_len = self.language_model2.model.resize_token_embeddings(new_num_tokens=None).num_embeddings
+        model2_vocab_len = self.language_model2.model.resize_token_embeddings(
+            new_num_tokens=None
+        ).num_embeddings  # noqa: E501
 
-        msg = f"Vocab size of tokenizer {vocab_size1} doesn't match with model {model2_vocab_len}. " \
-              "If you added a custom vocabulary to the tokenizer, " \
-              "make sure to supply 'n_added_tokens' to LanguageModel.load() and BertStyleLM.load()"
+        msg = (
+            f"Vocab size of tokenizer {vocab_size1} doesn't match with model {model2_vocab_len}. "  # noqa: E501
+            "If you added a custom vocabulary to the tokenizer, "
+            "make sure to supply 'n_added_tokens' to LanguageModel.load() and BertStyleLM.load()"  # noqa: E501
+        )  # noqa: E501
         assert vocab_size2 == model2_vocab_len, msg
 
     def get_language(self):
         return self.language_model1.language, self.language_model2.language
 
     def convert_to_transformers(self):
-        from transformers import DPRContextEncoder, DPRQuestionEncoder, AutoModel
+        from transformers import AutoModel, DPRContextEncoder, DPRQuestionEncoder
+
         if len(self.prediction_heads) != 1:
-            raise ValueError(f"Currently conversion only works for models with a SINGLE prediction head. "
-                             f"Your model has {len(self.prediction_heads)}")
+            raise ValueError(
+                f"Currently conversion only works for models with a SINGLE prediction head. "  # noqa: E501
+                f"Your model has {len(self.prediction_heads)}"
+            )
 
         if self.prediction_heads[0].model_type == "text_similarity":
             # init model
             if "dpr" in self.language_model1.model.config.model_type:
-                transformers_model1 = DPRQuestionEncoder(config=self.language_model1.model.config)
+                transformers_model1 = DPRQuestionEncoder(
+                    config=self.language_model1.model.config
+                )  # noqa: E501
             else:
-                transformers_model1 = AutoModel.from_config(config=self.language_model1.model.config)
+                transformers_model1 = AutoModel.from_config(
+                    config=self.language_model1.model.config
+                )  # noqa: E501
             if "dpr" in self.language_model2.model.config.model_type:
-                transformers_model2 = DPRContextEncoder(config=self.language_model2.model.config)
+                transformers_model2 = DPRContextEncoder(
+                    config=self.language_model2.model.config
+                )  # noqa: E501
             else:
-                transformers_model2 = AutoModel.from_config(config=self.language_model2.model.config)
+                transformers_model2 = AutoModel.from_config(
+                    config=self.language_model2.model.config
+                )  # noqa: E501
 
             # transfer weights for language model + prediction head
-            setattr(transformers_model1, transformers_model1.base_model_prefix, self.language_model1.model)
-            setattr(transformers_model2, transformers_model2.base_model_prefix, self.language_model2.model)
+            setattr(
+                transformers_model1,
+                transformers_model1.base_model_prefix,
+                self.language_model1.model,
+            )  # noqa: E501
+            setattr(
+                transformers_model2,
+                transformers_model2.base_model_prefix,
+                self.language_model2.model,
+            )  # noqa: E501
             logger.warning("No prediction head weights are required for DPR")
 
         else:
-            raise NotImplementedError(f"FARM -> Transformers conversion is not supported yet for"
-                                      f" prediction heads of type {self.prediction_heads[0].model_type}")
+            raise NotImplementedError(
+                f"FARM -> Transformers conversion is not supported yet for"  # noqa: E501
+                f" prediction heads of type {self.prediction_heads[0].model_type}"
+            )  # noqa: E501
         pass
 
         return transformers_model1, transformers_model2
 
     @classmethod
-    def convert_from_transformers(cls, model_name_or_path1, model_name_or_path2, device, task_type, processor=None, similarity_function="dot_product"):
+    def convert_from_transformers(
+        cls,
+        model_name_or_path1,
+        model_name_or_path2,
+        device,
+        task_type,
+        processor=None,
+        similarity_function="dot_product",
+    ):  # noqa: E501
         """
         Load a (downstream) model from huggingface's transformers format. Use cases:
          - continue training in FARM (e.g. take a squad QA model and fine-tune on your own data)
@@ -501,24 +560,33 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
         :param processor: populates prediction head with information coming from tasks
         :type processor: Processor
         :return: AdaptiveModel
-        """
-        lm1 = LanguageModel.load(pretrained_model_name_or_path=model_name_or_path1, language_model_class="DPRQuestionEncoder")
-        lm2 = LanguageModel.load(pretrained_model_name_or_path=model_name_or_path2, language_model_class="DPRContextEncoder")
+        """  # noqa: E501
+        lm1 = LanguageModel.load(
+            pretrained_model_name_or_path=model_name_or_path1,
+            language_model_class="DPRQuestionEncoder",
+        )  # noqa: E501
+        lm2 = LanguageModel.load(
+            pretrained_model_name_or_path=model_name_or_path2,
+            language_model_class="DPRContextEncoder",
+        )  # noqa: E501
         prediction_head = TextSimilarityHead(similarity_function=similarity_function)
-        #TODO Infer type of head automatically from config
+        # TODO Infer type of head automatically from config
         if task_type == "text_similarity":
-            bi_adaptive_model = cls(language_model1=lm1,
-                                    language_model2=lm2,
-                                    prediction_heads=[prediction_head],
-                                    embeds_dropout_prob=0.1,
-                                    lm1_output_types=["per_sequence"],
-                                    lm2_output_types=["per_sequence"],
-                                    device=device)
+            bi_adaptive_model = cls(
+                language_model1=lm1,
+                language_model2=lm2,
+                prediction_heads=[prediction_head],
+                embeds_dropout_prob=0.1,
+                lm1_output_types=["per_sequence"],
+                lm2_output_types=["per_sequence"],
+                device=device,
+            )
         else:
-            raise NotImplementedError(f"Huggingface's transformer models of type {task_type} are not supported yet for BiAdaptive Models")
+            raise NotImplementedError(
+                f"Huggingface's transformer models of type {task_type} are not supported yet for BiAdaptive Models"  # noqa: E501
+            )  # noqa: E501
 
         if processor:
             bi_adaptive_model.connect_heads_with_processor(processor.tasks)
 
         return bi_adaptive_model
-

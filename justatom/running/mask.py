@@ -1,7 +1,7 @@
 import abc
 import copy
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Dict, List, Tuple, Union
 
 import numpy as np
 import simplejson as json
@@ -15,7 +15,7 @@ from justatom.modeling.prime import IDocEmbedder
 class IMODELRunner:
     """
     Base Class for implementing M1/M2/M3 etc... models with frameworks like PyTorch and co.
-    """
+    """  # noqa: E501
 
     subclasses = {}  # type: Dict
 
@@ -41,14 +41,16 @@ class IMODELRunner:
         :return: An instance of the specified processor.
         """
         config_file = Path(data_dir) / "runner_config.json"
-        assert config_file.exists(), "The config is not found, couldn't load the processor"
+        assert (
+            config_file.exists()
+        ), "The config is not found, couldn't load the processor"  # noqa: E501
         logger.info(f"Runner config found locally at {data_dir}")
         with open(config_file) as f:
             config = json.load(f)
         runner = cls.subclasses[config["klass"]].load(data_dir, config=config)
         return runner
 
-    def save_config(self, save_dir: Union[Path, str]):
+    def save_config(self, save_dir: Path | str):
         save_filename = Path(save_dir) / "runner_config.json"
         config = copy.deepcopy(self.config)
         config["klass"] = self.__class__.__name__
@@ -73,7 +75,7 @@ class IMODELRunner:
         # Save the model itself
         self.model.save(save_dir)
 
-    def connect_heads_with_processor(self, tasks: Dict, require_labels: bool = True):
+    def connect_heads_with_processor(self, tasks: dict, require_labels: bool = True):
         """
         Populates prediction heads (flow) with information coming from tasks.
 
@@ -88,18 +90,19 @@ class IMODELRunner:
             head.label_tensor_name = tasks[head.task_name]["label_tensor_name"]
             label_list = tasks[head.task_name]["label_list"]
             if not label_list and require_labels:
-                raise Exception(f"The task '{head.task_name}' is missing a valid set of labels")
+                raise Exception(
+                    f"The task '{head.task_name}' is missing a valid set of labels"
+                )  # noqa: E501
             label_list = tasks[head.task_name]["label_list"]
             head.label_list = label_list
             head.metric = tasks[head.task_name]["metric"]
 
 
 class ICLUSTERINGWrapperBackend(BaseEmbedder):
-
     def __init__(self, model: IDocEmbedder):
         self.model = model
 
-    def embed(self, documents: List[str], verbose: bool = False) -> np.ndarray:
+    def embed(self, documents: list[str], verbose: bool = False) -> np.ndarray:
         """Embed a list of n documents/words into an n-dimensional
         matrix of embeddings
 
@@ -123,36 +126,33 @@ class ICLUSTERINGRunner(abc.ABC):
         self.model = model
 
     @abc.abstractmethod
-    def fit_transform(self, docs, **kwargs) -> Tuple[List[int], Union[np.ndarray, None]]:
+    def fit_transform(self, docs, **kwargs) -> tuple[list[int], np.ndarray | None]:
         pass
 
 
 class IRetrieverRunner(abc.ABC):
-
     @abc.abstractmethod
-    def retrieve_topk(self, queries: Union[str, List[str]], top_k: int = 5):
+    def retrieve_topk(self, queries: str | list[str], top_k: int = 5):
         pass
 
 
 class IIndexerRunner(abc.ABC):
-
     @abc.abstractmethod
-    def index(self, documents: List[Document], **kwargs):
+    def index(self, documents: list[Document], **kwargs):
         pass
 
 
 class IEvaluatorRunner(abc.ABC):
-
     def __init__(self, ir: IRetrieverRunner):
         self.ir = ir
 
     @abc.abstractmethod
     def evaluate_topk(
         self,
-        queries: Union[str, List[str]],
-        metrics: List[Union[str, Callable]],
-        metrics_top_k: List[Union[str, Callable]],
-        eval_top_k: List[int] = None,
+        queries: str | list[str],
+        metrics: list[str | Callable],
+        metrics_top_k: list[str | Callable],
+        eval_top_k: list[int] = None,
         top_k: int = 5,
     ):
         pass

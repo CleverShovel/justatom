@@ -1,17 +1,18 @@
-from justatom.modeling.mask import IMetric
-import torch
-import numpy as np
 import functools
-import torchmetrics as tm
-from justatom.etc.pattern import singleton
-from typing import Callable, Tuple, Union, Any
-from dotmap import DotMap
 from collections import UserDict
+from collections.abc import Callable
+from typing import Any
+
+import numpy as np
+import torch
+import torchmetrics as tm
+
+from justatom.modeling.mask import IMetric
 
 
 def _to_numpy_wrapper(metric_fn: Callable) -> Callable:
     @functools.wraps(metric_fn)
-    def _wrapper(value: torch.Tensor, *args: Any, **kwargs: Any) -> Union[float, np.ndarray]:
+    def _wrapper(value: torch.Tensor, *args: Any, **kwargs: Any) -> float | np.ndarray:
         np_tensor = value.cpu().detach().numpy()
         value = metric_fn(np_tensor, *args, **kwargs)
 
@@ -130,7 +131,7 @@ class IAdditiveMetric(IMetric):
         Please follow the `minimal examples`_ sections for more use cases.
 
         .. _`minimal examples`: https://github.com/catalyst-team/catalyst#minimal-examples  # noqa: E501, W505
-    """
+    """  # noqa: E501
 
     def __init__(self, compute_on_call: bool = True, mode: str = "numpy"):
         """Init AdditiveMetric"""
@@ -180,13 +181,15 @@ class IAdditiveMetric(IMetric):
             self.mean_old = self.mean
             self.m_s = 0.0
         else:
-            self.mean = self.mean_old + (value - self.mean_old) * num_samples / float(self.num_samples)
+            self.mean = self.mean_old + (value - self.mean_old) * num_samples / float(
+                self.num_samples
+            )  # noqa: E501
             self.m_s += (value - self.mean_old) * (value - self.mean) * num_samples
             self.mean_old = self.mean
             self.std = np.sqrt(self.m_s / (self.num_samples - 1.0))
         return value
 
-    def compute(self) -> Tuple[float, float]:
+    def compute(self) -> tuple[float, float]:
         """
         Returns mean and std values of all the input data
 
@@ -199,7 +202,7 @@ class IAdditiveMetric(IMetric):
 class IMetrics(UserDict):
     """
     Some functions within `torchmetrics` lib require `num_labels` before. So we make lazy initialization.
-    """
+    """  # noqa: E501
 
     metrics = dict(
         Acc=functools.partial(tm.Accuracy, task="multiclass"),

@@ -1,6 +1,3 @@
-from functools import partial
-from typing import Dict, List, Optional, Union
-
 import torch
 from transformers import PreTrainedTokenizer, PreTrainedTokenizerFast
 
@@ -13,18 +10,18 @@ class INFERProcessor(IProcessor):
     """
     (1) This type of processor is responsible for fast inference using `tokenizers` custom implementation.
     (2) It performs only necessary transformation and avoids typical pre-processing bottleneck such as `regex` use.
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
-        tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
+        tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast,
         max_seq_len: int = 512,
         do_lower_case: bool = False,
         content_field: str = "content",
         prefix_field: str = "prefix",
         prefix: str = "",
     ):
-        super(INFERProcessor, self).__init__()
+        super(INFERProcessor, self).__init__()  # noqa: UP008
         self.tokenizer = tokenizer
         self.max_seq_len = max_seq_len
         self.do_lower_case = do_lower_case
@@ -51,7 +48,9 @@ class INFERProcessor(IProcessor):
         input_ids_batch = tokenized_batch["input_ids"]
         atten_ids_batch = tokenized_batch["attention_mask"]
 
-        for sample, input_ids, att_ids in zip(docs, input_ids_batch, atten_ids_batch):
+        for sample, input_ids, att_ids in zip(
+            docs, input_ids_batch, atten_ids_batch, strict=False
+        ):  # noqa: E501
             tokenized = {}
             features = dict(input_ids=input_ids, attention_mask=att_ids)
 
@@ -74,17 +73,16 @@ class INFERProcessor(IProcessor):
 
 
 class M1Processor(IProcessor):
-
     def __init__(
         self,
-        tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
+        tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast,
         max_seq_len: int = 512,
         do_lower_case: bool = False,
         content_field: str = "content",
         prefix_field: str = "prefix",
         prefix: str = "",
     ):
-        super(M1Processor, self).__init__()
+        super(M1Processor, self).__init__()  # noqa: UP008
         self.tokenizer = tokenizer
         self.max_seq_len = max_seq_len
         self.do_lower_case = do_lower_case
@@ -110,7 +108,9 @@ class M1Processor(IProcessor):
         input_ids_batch = tokenized_batch["input_ids"]
         atten_ids_batch = tokenized_batch["attention_mask"]
 
-        for sample, input_ids, att_ids in zip(docs, input_ids_batch, atten_ids_batch):
+        for sample, input_ids, att_ids in zip(
+            docs, input_ids_batch, atten_ids_batch, strict=False
+        ):  # noqa: E501
             tokenized = {}
             features = dict(input_ids=input_ids, attention_mask=att_ids)
 
@@ -137,11 +137,11 @@ class TripletProcessor(IProcessor):
     TRIplet Language Model separation for different encoder(s) LM processor that performs grouping for similarity fine-tuning.
     Preprocess samples for `justatom.training.loss.TripletLoss` loss function
     for separating samples at least by `margin` distance using both `negative`, `positive` samples.
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
-        tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
+        tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast,
         max_seq_len: int = 512,
         prefix: str = "",
         **kwargs,
@@ -152,7 +152,7 @@ class TripletProcessor(IProcessor):
         self.prefix = prefix
 
     @classmethod
-    def load(cls, where, config: Dict, **props):
+    def load(cls, where, config: dict, **props):
         tokenizer = ITokenizer.from_pretrained(where)
         return cls(tokenizer=tokenizer, **config)
 
@@ -178,7 +178,7 @@ class TripletProcessor(IProcessor):
         atten_ids_batch = tokenized_batch["attention_mask"]
         # ---
         for sample, input_ids, att_ids, group_ids in zip(
-            docs, input_ids_batch, atten_ids_batch, groups
+            docs, input_ids_batch, atten_ids_batch, groups, strict=False
         ):
             tokenized = {}
             # TODO: Convert `group_id` to compatable format
@@ -209,11 +209,11 @@ class ContrastiveProcessor(IProcessor):
     """
     ContrastiveProcessor separation for different encoder(s) LM processor that performs grouping for similarity fine-tuning.
     Preprocess samples for `justatom.training.loss.ContrastiveLoss` loss function
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
-        tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
+        tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast,
         max_seq_len: int = 512,
         queries_prefix: str = "query:",
         queries_field: str = "query",
@@ -230,7 +230,7 @@ class ContrastiveProcessor(IProcessor):
         self.pos_queries_field = pos_queries_field
 
     @classmethod
-    def load(cls, where, config: Dict, **props):
+    def load(cls, where, config: dict, **props):
         tokenizer = ITokenizer.from_pretrained(where)
         return cls(tokenizer=tokenizer, **config)
 
@@ -286,6 +286,7 @@ class ContrastiveProcessor(IProcessor):
             queries_atten_ids_batch,
             pos_queries_input_ids_batch,
             pos_queries_atten_ids_batch,
+            strict=False,
         ):
             features = dict(
                 input_ids=queries_input_ids,
@@ -318,26 +319,26 @@ class M2Processor(IProcessor):
     """
     (1) This processor uses two different tokenizers. First one transforms `queries` while the second one - `passages`.
     (2) It DOES NOT expect queries to have labels.
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
-        query_tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],  # type: ignore
-        passage_tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],  # type: ignore
+        query_tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast,  # type: ignore
+        passage_tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast,  # type: ignore
         do_lower_case: bool = False,
         max_seq_len_query: int = 512,
         max_seq_len_passage: int = 512,
         data_dir: str = "",
         metric=None,  # type: ignore
         dev_split: float = 0.1,
-        proxies: Optional[dict] = None,
-        max_samples: Optional[int] = None,
+        proxies: dict | None = None,
+        max_samples: int | None = None,
         embed_title: bool = True,
         num_positives: int = 1,
         num_hard_negatives: int = 1,
         shuffle_negatives: bool = True,
         shuffle_positives: bool = False,
-        label_list: Optional[List[str]] = None,
+        label_list: list[str] | None = None,
         **kwargs,
     ):
         """
@@ -363,8 +364,8 @@ class M2Processor(IProcessor):
         :param shuffle_positives: Whether to shuffle all the positive passages before selecting the num_positive number of passages
         :param label_list: list of labels to predict. Usually ["hard_negative", "positive"]
         :param kwargs: placeholder for passing generic parameters
-        """
-        super(M2Processor, self).__init__()
+        """  # noqa: E501
+        super(M2Processor, self).__init__()  # noqa: UP008
         if metric:
             pass
 
@@ -376,12 +377,12 @@ class ATOMICProcessor(IProcessor):
     """
     (1) This processor uses two different tokenizers. First one transforms `queries` while the second one - `passages`.
     (2) It DOES expect each `query` to have its own `label`.
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
-        query_tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],  # type: ignore
-        passage_tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],  # type: ignore
+        query_tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast,  # type: ignore
+        passage_tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast,  # type: ignore
         do_lower_case_query: bool = False,
         do_lower_case_passage: bool = False,
         max_seq_len_query: int = 128,
@@ -389,17 +390,17 @@ class ATOMICProcessor(IProcessor):
         data_dir: str = "",
         metric=None,  # type: ignore
         dev_split: float = 0.1,
-        proxies: Optional[dict] = None,
-        max_samples: Optional[int] = None,
+        proxies: dict | None = None,
+        max_samples: int | None = None,
         embed_title: bool = True,
         num_positives: int = 1,
         num_hard_negatives: int = 1,
         shuffle_negatives: bool = True,
         shuffle_positives: bool = False,
-        label_list: Optional[List[str]] = None,
-        label_queries_list: Optional[List[str]] = None,
+        label_list: list[str] | None = None,
+        label_queries_list: list[str] | None = None,
     ):
-        super(ATOMICProcessor, self).__init__()
+        super(ATOMICProcessor, self).__init__()  # noqa: UP008
 
     def dataset_from_dicts(self, dicts):
         pass

@@ -1,7 +1,6 @@
-from typing import Optional, Type
 from types import TracebackType
-from lazy_imports.try_import import _DeferredImportExceptionContextManager
 
+from lazy_imports.try_import import _DeferredImportExceptionContextManager
 
 DEFAULT_IMPORT_ERROR_MSG = "Try 'pip install {}'"
 
@@ -10,15 +9,18 @@ class LazyImport(_DeferredImportExceptionContextManager):
     """
     Wrapper on top of lazy_import's _DeferredImportExceptionContextManager that adds the possibility to customize the
     error messages.
-    """
+    """  # noqa: E501
 
     def __init__(self, message: str = DEFAULT_IMPORT_ERROR_MSG) -> None:
         super().__init__()
         self.import_error_msg = message
 
     def __exit__(
-        self, exc_type: Optional[Type[Exception]], exc_value: Optional[Exception], traceback: Optional[TracebackType]
-    ) -> Optional[bool]:
+        self,
+        exc_type: type[Exception] | None,
+        exc_value: Exception | None,
+        traceback: TracebackType | None,  # noqa: E501
+    ) -> bool | None:
         """Exit the context manager.
 
         Args:
@@ -36,7 +38,7 @@ class LazyImport(_DeferredImportExceptionContextManager):
         """
         if isinstance(exc_value, ImportError):
             message = (
-                f"Failed to import '{exc_value.name}'. {self.import_error_msg.format(exc_value.name)}. "
+                f"Failed to import '{exc_value.name}'. {self.import_error_msg.format(exc_value.name)}. "  # noqa: E501
                 f"Original error: {exc_value}"
             )
             self._deferred = (exc_value, message)

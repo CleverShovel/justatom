@@ -1,7 +1,7 @@
 import abc
 import inspect
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional
 
 import simplejson as json
 import torch
@@ -27,7 +27,7 @@ def ignite_tensor_features(features):
     :param features: A list of dictionaries. Each dictionary corresponds to one sample. Its keys are the
                      names of the type of feature and the keys are the features themselves.
     :Return: a Pytorch dataset and a list of tensor names.
-    """
+    """  # noqa: E501
     # features can be an empty list in cases where down sampling occurs
     if len(features) == 0:
         return None, None
@@ -42,7 +42,6 @@ def ignite_tensor_features(features):
 
 
 class IProcessor(abc.ABC):
-
     subclasses = {}
 
     def __init_subclass__(cls, **kwargs):
@@ -52,8 +51,8 @@ class IProcessor(abc.ABC):
     @abc.abstractmethod
     def dataset_from_dicts(
         self,
-        dicts: List[Dict],
-        indices: Optional[List[int]] = None,
+        dicts: list[dict],
+        indices: list[int] | None = None,
         return_baskets: bool = False,
         debug: bool = False,
     ):
@@ -70,7 +69,9 @@ class IProcessor(abc.ABC):
         text_column_name=None,
     ):
         if type(label_list) is not list:
-            raise ValueError(f"Argument `label_list` must be of type list. Got: f{type(label_list)}")
+            raise ValueError(
+                f"Argument `label_list` must be of type list. Got: f{type(label_list)}"
+            )  # noqa: E501
 
         if label_name is None:
             label_name = f"{name}_label"
@@ -95,8 +96,10 @@ class IProcessor(abc.ABC):
         :param basket: the basket containing the samples
 
         :return: True if all the samples in the basket has computed its features, False otherwise
-        """
-        return basket.samples and not any(sample.features is None for sample in basket.samples)
+        """  # noqa: E501
+        return basket.samples and not any(
+            sample.features is None for sample in basket.samples
+        )  # noqa: E501
 
     def save(self, save_dir: str):
         """
@@ -148,16 +151,20 @@ class IProcessor(abc.ABC):
             logger.info(f"Processor found locally at {where}")
             with open(config_file) as f:
                 config = json.load(f)
-            processor = cls.subclasses[config["klass"]].load(where, config=config, **kwargs)
+            processor = cls.subclasses[config["klass"]].load(
+                where, config=config, **kwargs
+            )  # noqa: E501
         else:
             logger.info("Loading default `INFERProcessor` instance")
-            processor = cls.subclasses["INFERProcessor"].load(where, config={}, **kwargs)
+            processor = cls.subclasses["INFERProcessor"].load(
+                where, config={}, **kwargs
+            )  # noqa: E501
         return processor
 
     def generate_config(self):
         """
         Generates config file from Class and instance attributes (only for sensible config parameters).
-        """
+        """  # noqa: E501
         config = {}
         # self.__dict__ doesn't give parent class attributes
         for key, value in inspect.getmembers(self):
@@ -167,8 +174,8 @@ class IProcessor(abc.ABC):
                 config[key] = value
         return config
 
-    def _create_dataset(self, baskets: List[SampleBasket]):
-        features_flat: List = []
+    def _create_dataset(self, baskets: list[SampleBasket]):
+        features_flat: list = []
         basket_to_remove = []
         for basket in baskets:
             if self._check_sample_features(basket):

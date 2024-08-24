@@ -2,7 +2,6 @@ import copy
 import io
 import os
 from pathlib import Path
-from typing import Dict, List, Optional, Union
 
 import fire
 import polars as pl
@@ -23,11 +22,10 @@ This API point labels incoming .docx document correctly as long as it follows th
 --- (3) <query> | The query that could be answered using <context> as provided micro-knowledge db.
 --- (4) <context> |  The context to help answer the <query>.
 --- (5) <answer> | The answer to the <query> given <context>.
-"""
+"""  # noqa: E501
 
 
 class IState:
-
     def __init__(self, name: str = None):
         self.name = name
 
@@ -98,7 +96,7 @@ class IState:
                 data, prefix_to_remove="", state_to_move=ANSWERBufferState
             )
         raise Exception(
-            f"Couldn't react to the following [{data}] input given current state {self.__class__.__name__}"
+            f"Couldn't react to the following [{data}] input given current state {self.__class__.__name__}"  # noqa: E501
         )
 
     @property
@@ -127,14 +125,12 @@ class IState:
 
 
 class STARTState(IState):
-
     def __init__(self):
         super().__init__(name=self.__class__.__name__)
         self.transitions = dict(TITLEState=TITLEState)
 
 
 class TITLEState(IState):
-
     # TITLEState is the starting state
 
     def __init__(self):
@@ -143,7 +139,6 @@ class TITLEState(IState):
 
 
 class ENUMState(IState):
-
     # ENUMState is the state you enter upon reading numbered order of the snippet
     # e.g. "22." => The twenty second example follows
     # e.g. "extractive:dialogue"
@@ -154,8 +149,7 @@ class ENUMState(IState):
 
 
 class TYPEState(IState):
-
-    # TYPEState is the state you enter upon reading format line: <extractive> or <extractive:dialogue>
+    # TYPEState is the state you enter upon reading format line: <extractive> or <extractive:dialogue>  # noqa: E501
     # From this state the <query> should come next
 
     def __init__(self):
@@ -164,8 +158,7 @@ class TYPEState(IState):
 
 
 class QUERYState(IState):
-
-    # QUERYState is the state you enter upon reading query line that follows pattern: <query: What are the rules of the hunger games?>
+    # QUERYState is the state you enter upon reading query line that follows pattern: <query: What are the rules of the hunger games?>  # noqa: E501
     # From this state you can move either
     # (1) directly to the context <context: In punishment for the uprising...>
     # (2) move to the continuation of the query if it's quite long => `QUERYBufferState`
@@ -178,8 +171,7 @@ class QUERYState(IState):
 
 
 class QUERYBufferState(IState):
-
-    # QUERYBufferState is the optional state which means you may or may not enter it. Triggering case is upon reading the query line
+    # QUERYBufferState is the optional state which means you may or may not enter it. Triggering case is upon reading the query line  # noqa: E501
     #  <query:What are the\n // QUERYState
     #  rules of the hunger games> // QUERYBufferState
 
@@ -201,10 +193,9 @@ class QUERYBufferState(IState):
 
 
 class CONTEXTState(IState):
-
-    # CONTEXTState is the state you enter upon reading context line that follows pattern: <context: The rules of the hunger games ...>
+    # CONTEXTState is the state you enter upon reading context line that follows pattern: <context: The rules of the hunger games ...>  # noqa: E501
     # From this state you can move either
-    # (1) directly to the answer <answer: Twenty four tributes, male and female from each district>
+    # (1) directly to the answer <answer: Twenty four tributes, male and female from each district>  # noqa: E501
     # (2) move to the continuation of the context if it's quite long => `BUFFERState`
 
     def __init__(self):
@@ -215,8 +206,7 @@ class CONTEXTState(IState):
 
 
 class CONTEXTBufferState(IState):
-
-    # CONTEXTBufferState is the optional state meaning you may or may not enter it. Triggering case is upon reading context line
+    # CONTEXTBufferState is the optional state meaning you may or may not enter it. Triggering case is upon reading context line  # noqa: E501
     # <context:The rules of the\n // CONTEXTState
     # hunger games are simple. In punishment ... > // CONTEXTBufferState
 
@@ -238,7 +228,7 @@ class CONTEXTBufferState(IState):
 
 
 class ANSWERState(IState):
-    # ANSWERState is the state you enter upon reading answer line that follows pattern: <answer: Twenty-four tributes between\n
+    # ANSWERState is the state you enter upon reading answer line that follows pattern: <answer: Twenty-four tributes between\n  # noqa: E501
     # the ages of twelve and eighteen...>
     # From this state you can move either
     # (1) directly to the enum <22.>
@@ -252,11 +242,10 @@ class ANSWERState(IState):
 
 
 class ANSWERBufferState(IState):
-
-    # ANSWERBufferState is the optional state meaning you may or may not enter it. Triggering case is upon reading answer line
-    # <answer: In punishment for the uprising, each of the twelve districts must provide one girl and one boy,\n // ANSWERState
-    # called tributes, to participate. The 24 tributes will be imprisoned in a vast outdoor arena\n // ANSWERBUfferState
-    # that could hold anything from a burning desert to a frozen wasteland. // ANSWERBufferState
+    # ANSWERBufferState is the optional state meaning you may or may not enter it. Triggering case is upon reading answer line  # noqa: E501
+    # <answer: In punishment for the uprising, each of the twelve districts must provide one girl and one boy,\n // ANSWERState  # noqa: E501
+    # called tributes, to participate. The 24 tributes will be imprisoned in a vast outdoor arena\n // ANSWERBUfferState  # noqa: E501
+    # that could hold anything from a burning desert to a frozen wasteland. // ANSWERBufferState  # noqa: E501
     group = "ANSWERState"
 
     def __init__(self):
@@ -278,16 +267,16 @@ def make_one_full_state_chunk():
     pass
 
 
-def make_one_full_state_chunk():
+def make_one_full_state_chunk():  # noqa: F811
     pass
 
 
 def check_and_flush(
-    cur_state: IState, arr: List[str], sample: Dict, schema_mapping: Dict
+    cur_state: IState, arr: list[str], sample: dict, schema_mapping: dict
 ):
     """
     This is triggered upon next state followed by any of `state_i`: `state_i`.belongs_to == "BUFFER"
-    """
+    """  # noqa: E501
     if cur_state.derives_as is None:
         return sample
     assert (
@@ -335,16 +324,10 @@ def main(one_iterator):
             cur_state_sample = check_and_flush(
                 cur_state, cur_state_buffer, cur_state_sample, state_to_sample
             )
-        elif next_state.belongs_to == "CONTEXTState":
-            key, data = state_to_sample[str(next_state)], formatted_data
-            cur_state_sample[key] = data
-            cur_state_sample = check_and_flush(
-                cur_state,
-                arr=cur_state_buffer,
-                sample=cur_state_sample,
-                schema_mapping=state_to_sample,
-            )
-        elif next_state.belongs_to == "ANSWERState":
+        elif (
+            next_state.belongs_to == "CONTEXTState"
+            or next_state.belongs_to == "ANSWERState"
+        ):  # noqa: E501
             key, data = state_to_sample[str(next_state)], formatted_data
             cur_state_sample[key] = data
             cur_state_sample = check_and_flush(
@@ -374,7 +357,7 @@ def main(one_iterator):
                 samples.append(copy.deepcopy(cur_state_sample))
             else:
                 logger.info(
-                    f"Incomplete sample yet, present fields are {','.join(cur_state_sample.keys())}"
+                    f"Incomplete sample yet, present fields are {','.join(cur_state_sample.keys())}"  # noqa: E501
                 )
             logger.info(f"LOCDOC - STEP {len(samples)}")
         elif next_state.belongs_to == "TYPEState":
@@ -403,7 +386,7 @@ def io_wrapper_txt(fp, chunk_size: int = 10_000_000, sep: str = "\n"):
         logger.error(message)
         raise ValueError(message)
     with open(fp) as fin:
-        for chunk in stl.chunkify(fin, chunksize=chunk_size, sep=sep):
+        for chunk in stl.chunkify(fin, chunksize=chunk_size, sep=sep):  # noqa: UP028
             yield chunk
 
 
@@ -417,16 +400,16 @@ def io_wrapper_docx(fp, chunk_size: int = 10_000_000, sep: str = "\n"):
         raise ValueError(message)
     try:
         data = docx2txt.process(fp)
-    except:
+    except:  # noqa: E722
         message = f"Error reading [{fp}] docx file."
         logger.error(message)
-        raise ValueError(message)
+        raise ValueError(message)  # noqa: B904
     else:
-        for chunk in stl.chunkify(io.StringIO(data), chunksize=chunk_size, sep=sep):
+        for chunk in stl.chunkify(io.StringIO(data), chunksize=chunk_size, sep=sep):  # noqa: UP028
             yield chunk
 
 
-def ignite_io_loaders(fpaths: List[Union[str, Path]]) -> stl.NIterator:
+def ignite_io_loaders(fpaths: list[str | Path]) -> stl.NIterator:
     iterators = []
     for fpath in fpaths:
         fp = Path(fpath)
@@ -442,8 +425,8 @@ def ignite_io_loaders(fpaths: List[Union[str, Path]]) -> stl.NIterator:
 
 def parse(
     filepath_or_dir,
-    extensions: Optional[List[str]] = None,
-    out_path: Optional[str] = None,
+    extensions: list[str] | None = None,
+    out_path: str | None = None,
 ):
     AVAILABLE_EXTENSIONS = [".docx", ".txt"]
     fpath_or_dir = Path(filepath_or_dir)
@@ -453,7 +436,7 @@ def parse(
         # Note that `okay_paths` could be <= 0
         if len(okay_paths) <= 0:
             message = f"Provided `filepath_or_dir` {str(filepath_or_dir)} is a directory but no files found matching \
-                        one of [{','.join(AVAILABLE_EXTENSIONS)}]"
+                        one of [{','.join(AVAILABLE_EXTENSIONS)}]"  # noqa: E501
     else:
         if not fpath_or_dir.exists():
             message = f"Provided `filepath_or_dir` {str(fpath_or_dir)} doesn't exist"
@@ -463,7 +446,7 @@ def parse(
             okay_paths = [fpath_or_dir]
         else:
             message = f"Provided `filepath_or_dir` {str(fpath_or_dir)} exists but suffix [{fpath_or_dir.suffix}] is not yet \
-                        supported. Provide one of [{','.join(AVAILABLE_EXTENSIONS)}]"
+                        supported. Provide one of [{','.join(AVAILABLE_EXTENSIONS)}]"  # noqa: E501
             logger.error(message)
             raise ValueError(message)
 
@@ -485,7 +468,7 @@ def parse(
             f"\
                 You provided resulting filepath to have [{_wrong_suffix}] suffix which is not supported.\
                 New filepath = [{out_path}]\
-            "
+            "  # noqa: E501
         )
     out_path.parent.mkdir(exist_ok=True, parents=True)
     pl_wrapper.write_csv(f"{str(out_path)}")

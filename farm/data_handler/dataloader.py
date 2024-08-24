@@ -1,16 +1,24 @@
 from math import ceil
 
-from torch.utils.data import DataLoader, Dataset, Sampler
 import torch
+from torch.utils.data import DataLoader
 
 
 class NamedDataLoader(DataLoader):
     """
     A modified version of the PyTorch DataLoader that returns a dictionary where the key is
     the name of the tensor and the value is the tensor itself.
-    """
+    """  # noqa: E501
 
-    def __init__(self, dataset, batch_size, sampler=None, tensor_names=None, num_workers=0, pin_memory=False):
+    def __init__(
+        self,
+        dataset,
+        batch_size,
+        sampler=None,
+        tensor_names=None,
+        num_workers=0,
+        pin_memory=False,
+    ):  # noqa: E501
         """
         :param dataset: The dataset that will be wrapped by this NamedDataLoader
         :type dataset: Dataset
@@ -24,32 +32,30 @@ class NamedDataLoader(DataLoader):
         :type num_workers: int
         :param pin_memory: argument for Data Loader to use page-locked memory for faster transfer of data to GPU
         :type pin_memory: bool
-        """
+        """  # noqa: E501
 
         def collate_fn(batch):
             """
             A custom collate function that formats the batch as a dictionary where the key is
             the name of the tensor and the value is the tensor itself
-            """
+            """  # noqa: E501
 
             if type(dataset).__name__ == "_StreamingDataSet":
                 _tensor_names = dataset.tensor_names
             else:
                 _tensor_names = tensor_names
 
-            if type(batch[0]) == list:
+            if type(batch[0]) == list:  # noqa: E721
                 batch = batch[0]
 
-            assert len(batch[0]) == len(
-                _tensor_names
-            ), "Dataset contains {} tensors while there are {} tensor names supplied: {}".format(
-                len(batch[0]), len(_tensor_names), _tensor_names
-            )
+            assert (
+                len(batch[0]) == len(_tensor_names)
+            ), f"Dataset contains {len(batch[0])} tensors while there are {len(_tensor_names)} tensor names supplied: {_tensor_names}"  # noqa: E501
             lists_temp = [[] for _ in range(len(_tensor_names))]
-            ret = dict(zip(_tensor_names, lists_temp))
+            ret = dict(zip(_tensor_names, lists_temp, strict=False))
 
             for example in batch:
-                for name, tensor in zip(_tensor_names, example):
+                for name, tensor in zip(_tensor_names, example, strict=False):
                     ret[name].append(tensor)
 
             for key in ret:
@@ -57,7 +63,7 @@ class NamedDataLoader(DataLoader):
 
             return ret
 
-        super(NamedDataLoader, self).__init__(
+        super(NamedDataLoader, self).__init__(  # noqa: UP008
             dataset=dataset,
             sampler=sampler,
             batch_size=batch_size,
