@@ -99,15 +99,7 @@ def quality_checks_qids(qids_to_relevant_passageids, qids_to_ranked_candidate_pa
     # Check that we do not have multiple passages per query
     for qid in qids_to_ranked_candidate_passages:
         # Remove all zeros from the candidates
-        duplicate_pids = set(
-            [
-                item
-                for item, count in Counter(
-                    qids_to_ranked_candidate_passages[qid]
-                ).items()
-                if count > 1
-            ]
-        )  # noqa: E501
+        duplicate_pids = set([item for item, count in Counter(qids_to_ranked_candidate_passages[qid]).items() if count > 1])  # noqa: E501
 
         if len(duplicate_pids - set([0])) > 0:
             message = f"Cannot rank a passage multiple times for a single query. QID={qid}, PID={list(duplicate_pids)[0]}"  # noqa: E501
@@ -141,9 +133,7 @@ def compute_metrics(qids_to_relevant_passageids, qids_to_ranked_candidate_passag
                     ranking.append(i + 1)
                     break
     if len(ranking) == 0:
-        raise OSError(
-            "No matching QIDs found. Are you sure you are scoring the evaluation set?"
-        )  # noqa: E501
+        raise OSError("No matching QIDs found. Are you sure you are scoring the evaluation set?")  # noqa: E501
 
     MRR = MRR / len(qids_to_relevant_passageids)
     all_scores["MRR @10"] = MRR
@@ -151,9 +141,7 @@ def compute_metrics(qids_to_relevant_passageids, qids_to_ranked_candidate_passag
     return all_scores
 
 
-def compute_metrics_from_files(
-    path_to_reference, path_to_candidate, perform_checks=True
-):  # noqa: E501
+def compute_metrics_from_files(path_to_reference, path_to_candidate, perform_checks=True):  # noqa: E501
     """Compute MRR metric
     Args:
     p_path_to_reference_file (str): path to reference file.
@@ -173,15 +161,11 @@ def compute_metrics_from_files(
     qids_to_relevant_passageids = load_reference(path_to_reference)
     qids_to_ranked_candidate_passages = load_candidate(path_to_candidate)
     if perform_checks:
-        allowed, message = quality_checks_qids(
-            qids_to_relevant_passageids, qids_to_ranked_candidate_passages
-        )  # noqa: E501
+        allowed, message = quality_checks_qids(qids_to_relevant_passageids, qids_to_ranked_candidate_passages)  # noqa: E501
         if message != "":
             print(message)  # noqa: E701
 
-    return compute_metrics(
-        qids_to_relevant_passageids, qids_to_ranked_candidate_passages
-    )  # noqa: E501
+    return compute_metrics(qids_to_relevant_passageids, qids_to_ranked_candidate_passages)  # noqa: E501
 
 
 def main():

@@ -26,9 +26,7 @@ class ITokenizer(PreTrainedTokenizer):
         where_path = Path(where)
         if where_path.is_dir():
             config_path = where_path / "tokenizer_config.json"
-            assert (
-                config_path.exists()
-            ), f"[tokenizer_config.json] is missing in [{str(where)}] directory"  # noqa: E501
+            assert config_path.exists(), f"[tokenizer_config.json] is missing in [{str(where)}] directory"  # noqa: E501
             with open(config_path) as fp:
                 config = json.load(fp)
             klass = config["tokenizer_class"]
@@ -49,9 +47,7 @@ class ITokenizer(PreTrainedTokenizer):
 
 
 class WHITESPACETokenizer(ITokenizer):
-    def __init__(
-        self, vocab: dict[str, int], max_len: int = None, pad_token: str = None, **props
-    ):  # noqa: E501
+    def __init__(self, vocab: dict[str, int], max_len: int = None, pad_token: str = None, **props):  # noqa: E501
         self.__token_ids = vocab
         self.__id_tokens: dict[int, str] = {value: key for key, value in vocab.items()}
         self.pad_token = pad_token
@@ -81,9 +77,7 @@ class WHITESPACETokenizer(ITokenizer):
     def get_vocab(self) -> dict[str, int]:
         return self.__token_ids.copy()
 
-    def save_vocabulary(
-        self, save_directory: str, filename_prefix: str | None = None
-    ) -> tuple[str]:  # noqa: E501
+    def save_vocabulary(self, save_directory: str, filename_prefix: str | None = None) -> tuple[str]:  # noqa: E501
         if filename_prefix is None:
             filename_prefix = ""
         vocab_path = Path(save_directory, filename_prefix + "vocab.json")
@@ -105,9 +99,7 @@ def ignite_hf_tokenizer(
 ) -> PreTrainedTokenizer:
     model_name_or_path = str(pretrained_model_name_or_path)
     params = {}
-    if any(
-        tokenizer_type in model_name_or_path for tokenizer_type in ["albert", "xlnet"]
-    ):  # noqa: E501
+    if any(tokenizer_type in model_name_or_path for tokenizer_type in ["albert", "xlnet"]):  # noqa: E501
         params["keep_accents"] = True
 
     return AutoTokenizer.from_pretrained(

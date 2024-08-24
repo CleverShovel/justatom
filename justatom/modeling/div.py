@@ -208,9 +208,7 @@ class AttentionHead(nn.Module):
         )  # noqa: E501
 
         scale = query.size(1) ** 0.5
-        scores = (
-            torch.bmm(query, key.transpose(1, 2)) / scale
-        )  # batch_size x max_seq_len  x max_seq_len  # noqa: E501
+        scores = torch.bmm(query, key.transpose(1, 2)) / scale  # batch_size x max_seq_len  x max_seq_len  # noqa: E501
         # TODO:
         # Чтобы веса аттеншена не распределялись на паддинг - надо эти паддинги сделать нулевыми (перед софтмаксом).  # noqa: E501
         # Но attention_mask приходит в нативной форме. batch_size x max_seq_len.
@@ -226,9 +224,7 @@ class MultiHeadAttention(nn.Module):
     def __init__(self, num_heads, dim_inp, dim_out):
         super(MultiHeadAttention, self).__init__()  # noqa: UP008
 
-        self.heads = nn.ModuleList(
-            [AttentionHead(dim_inp, dim_out) for _ in range(num_heads)]
-        )  # noqa: E501
+        self.heads = nn.ModuleList([AttentionHead(dim_inp, dim_out) for _ in range(num_heads)])  # noqa: E501
         self.linear = nn.Linear(dim_out * num_heads, dim_inp)
         self.norm = nn.LayerNorm(dim_inp)
 
@@ -242,9 +238,7 @@ class MultiHeadAttention(nn.Module):
 class IAttention(nn.Module):
     props = ("embedding_dim", "dim_out", "attention_heads", "dropout")
 
-    def __init__(
-        self, embedding_dim, dim_out, attention_heads=4, dropout=0.1, **kwargs
-    ):  # noqa: E501
+    def __init__(self, embedding_dim, dim_out, attention_heads=4, dropout=0.1, **kwargs):  # noqa: E501
         super(IAttention, self).__init__()  # noqa: UP008
         self.config = dict(
             attention_heads=attention_heads,
@@ -253,9 +247,7 @@ class IAttention(nn.Module):
             dropout=dropout,
         )
 
-        self.attention = MultiHeadAttention(
-            attention_heads, embedding_dim, dim_out
-        )  # batch_size x max_seq_len x embedding_size
+        self.attention = MultiHeadAttention(attention_heads, embedding_dim, dim_out)  # batch_size x max_seq_len x embedding_size
         self.feed_forward = nn.Sequential(
             nn.Linear(embedding_dim, dim_out),
             nn.Dropout(dropout),
@@ -330,9 +322,7 @@ class MLAttention(nn.Module):
     ):  # noqa: E501
         super(MLAttention, self).__init__()  # noqa: UP008
         self.blocks = _get_clones(
-            IAttention(
-                embedding_dim, dim_out, attention_heads=attention_heads, dropout=dropout
-            ),
+            IAttention(embedding_dim, dim_out, attention_heads=attention_heads, dropout=dropout),
             num_blocks,  # noqa: E501
         )
         self.config = dict(

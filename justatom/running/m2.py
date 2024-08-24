@@ -80,11 +80,7 @@ class M2LMRunner(IMODELRunner, nn.Module):
         """  # noqa: E501
         pooled_output = [None, None]
 
-        if (
-            query_input_ids is not None
-            and query_segment_ids is not None
-            and query_attention_mask is not None
-        ):  # noqa: E501
+        if query_input_ids is not None and query_segment_ids is not None and query_attention_mask is not None:  # noqa: E501
             pooled_output1, _ = self.query_model(
                 input_ids=query_input_ids,
                 segment_ids=query_segment_ids,
@@ -92,11 +88,7 @@ class M2LMRunner(IMODELRunner, nn.Module):
             )
             pooled_output[0] = pooled_output1
 
-        if (
-            passage_input_ids is not None
-            and passage_segment_ids is not None
-            and passage_attention_mask is not None
-        ):  # noqa: E501
+        if passage_input_ids is not None and passage_segment_ids is not None and passage_attention_mask is not None:  # noqa: E501
             max_seq_len = passage_input_ids.shape[-1]
             passage_input_ids = passage_input_ids.view(-1, max_seq_len)
             passage_attention_mask = passage_attention_mask.view(-1, max_seq_len)

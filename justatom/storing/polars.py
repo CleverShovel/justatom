@@ -102,9 +102,7 @@ class POLARStore(IDFDocStore):
             dtype=pl.Boolean,
         )
 
-    def random_sample(
-        self, method: str = "binomial", sample_size: int = 100, num_obs: int = 1000
-    ):  # noqa: E501
+    def random_sample(self, method: str = "binomial", sample_size: int = 100, num_obs: int = 1000):  # noqa: E501
         """
         We want to sample the given population size (len(self.df)) taking `num_obs` observations with each
         observaion being `sample_size` size.
@@ -112,9 +110,7 @@ class POLARStore(IDFDocStore):
         # [self.df.sample(sample_size) for _ in range(num_obs)]
         # Lazy API. See https://stackoverflow.com/a/76359078/22622408 for more info
         pl_lazy_obs = [
-            self.df.lazy()
-            .select(row=pl.struct(pl.all()).sample(sample_size))
-            .unnest("row")
+            self.df.lazy().select(row=pl.struct(pl.all()).sample(sample_size)).unnest("row")
             for _ in range(num_obs)  # noqa: E501
         ]
 

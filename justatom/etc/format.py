@@ -18,7 +18,7 @@ def convert_date_to_rfc3339(date: str) -> str:
     and filter_utils.py.
     """  # noqa: E501
     parsed_datetime = datetime.fromisoformat(date)
-    if parsed_datetime.utcoffset() is None:
+    if parsed_datetime.utcoffset() is None:  # noqa: SIM108
         converted_date = parsed_datetime.isoformat() + "Z"
     else:
         converted_date = parsed_datetime.isoformat()

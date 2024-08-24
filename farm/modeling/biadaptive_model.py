@@ -107,9 +107,7 @@ class BaseBiAdaptiveModel:
             head.label_tensor_name = tasks[head.task_name]["label_tensor_name"]
             label_list = tasks[head.task_name]["label_list"]
             if not label_list and require_labels:
-                raise Exception(
-                    f"The task '{head.task_name}' is missing a valid set of labels"
-                )  # noqa: E501
+                raise Exception(f"The task '{head.task_name}' is missing a valid set of labels")  # noqa: E501
             label_list = tasks[head.task_name]["label_list"]
             head.label_list = label_list
             num_labels = len(label_list)  # noqa: F841
@@ -119,9 +117,7 @@ class BaseBiAdaptiveModel:
     def _get_prediction_head_files(cls, load_dir, strict=True):
         load_dir = Path(load_dir)
         files = os.listdir(load_dir)
-        config_files = [
-            load_dir / f for f in files if "config.json" in f and "prediction_head" in f
-        ]
+        config_files = [load_dir / f for f in files if "config.json" in f and "prediction_head" in f]
         # sort them to get correct order in case of multiple prediction heads
         config_files.sort()
         return config_files
@@ -194,18 +190,12 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
         self.lm2_output_dims = language_model2.get_output_dims()
         self.dropout1 = nn.Dropout(embeds_dropout_prob)
         self.dropout2 = nn.Dropout(embeds_dropout_prob)
-        self.prediction_heads = nn.ModuleList(
-            [ph.to(device) for ph in prediction_heads]
-        )  # noqa: E501
+        self.prediction_heads = nn.ModuleList([ph.to(device) for ph in prediction_heads])  # noqa: E501
         self.lm1_output_types = (
-            [lm1_output_types]
-            if isinstance(lm1_output_types, str)
-            else lm1_output_types  # noqa: E501
+            [lm1_output_types] if isinstance(lm1_output_types, str) else lm1_output_types  # noqa: E501
         )
         self.lm2_output_types = (
-            [lm2_output_types]
-            if isinstance(lm2_output_types, str)
-            else lm2_output_types  # noqa: E501
+            [lm2_output_types] if isinstance(lm2_output_types, str) else lm2_output_types  # noqa: E501
         )
         self.log_params()
         # default loss aggregation function is a simple sum (without using any of the optional params)  # noqa: E501
@@ -272,11 +262,11 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
         :type processor: Processor
         """  # noqa: E501
         # Language Model
-        if lm1_name:
+        if lm1_name:  # noqa: SIM108
             language_model1 = LanguageModel.load(os.path.join(load_dir, lm1_name))
         else:
             language_model1 = LanguageModel.load(load_dir)
-        if lm2_name:
+        if lm2_name:  # noqa: SIM108
             language_model2 = LanguageModel.load(os.path.join(load_dir, lm2_name))
         else:
             language_model2 = LanguageModel.load(load_dir)
@@ -305,9 +295,7 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
         :return: The per sample per prediciton head loss whose first two dimensions have length n_pred_heads, batch_size
         """  # noqa: E501
         all_losses = []
-        for head, logits_for_one_head in zip(
-            self.prediction_heads, logits, strict=False
-        ):  # noqa: E501
+        for head, logits_for_one_head in zip(self.prediction_heads, logits, strict=False):  # noqa: E501
             # check if PredictionHead connected to Processor
             assert hasattr(head, "label_tensor_name"), (
                 f"Label_tensor_names are missing inside the {head.task_name} Prediction Head. Did you connect the model"  # noqa: E501
@@ -333,9 +321,7 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
         all_losses = self.logits_to_loss_per_head(logits, **kwargs)
         # This aggregates the loss per sample across multiple prediction heads
         # Default is sum(), but you can configure any fn that takes [Tensor, Tensor ...] and returns [Tensor]  # noqa: E501
-        loss = self.loss_aggregation_fn(
-            all_losses, global_step=global_step, batch=kwargs
-        )  # noqa: E501
+        loss = self.loss_aggregation_fn(all_losses, global_step=global_step, batch=kwargs)  # noqa: E501
         return loss
 
     def prepare_labels(self, **kwargs):
@@ -379,10 +365,7 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
             ):  # noqa: E501
                 # Choose relevant vectors from LM as output and perform dropout
                 if pooled_output[0] is not None:
-                    if (
-                        lm1_out == "per_sequence"
-                        or lm1_out == "per_sequence_continuous"
-                    ):  # noqa: E501
+                    if lm1_out == "per_sequence" or lm1_out == "per_sequence_continuous":  # noqa: E501
                         output1 = self.dropout1(pooled_output[0])
                     else:
                         raise ValueError(
@@ -392,10 +375,7 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
                     output1 = None
 
                 if pooled_output[1] is not None:
-                    if (
-                        lm2_out == "per_sequence"
-                        or lm2_out == "per_sequence_continuous"
-                    ):  # noqa: E501
+                    if lm2_out == "per_sequence" or lm2_out == "per_sequence_continuous":  # noqa: E501
                         output2 = self.dropout2(pooled_output[1])
                     else:
                         raise ValueError(
@@ -442,9 +422,7 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
             "lm2_type": self.language_model2.__class__.__name__,
             "lm2_name": self.language_model2.name,
             "lm2_output_types": ",".join(self.lm2_output_types),
-            "prediction_heads": ",".join(
-                [head.__class__.__name__ for head in self.prediction_heads]
-            ),
+            "prediction_heads": ",".join([head.__class__.__name__ for head in self.prediction_heads]),
         }
         try:
             MlLogger.log_params(params)
@@ -455,9 +433,7 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
         """Verifies that the model fits to the tokenizer vocabulary.
         They could diverge in case of custom vocabulary added via tokenizer.add_tokens()"""  # noqa: E501
 
-        model1_vocab_len = self.language_model1.model.resize_token_embeddings(
-            new_num_tokens=None
-        ).num_embeddings  # noqa: E501
+        model1_vocab_len = self.language_model1.model.resize_token_embeddings(new_num_tokens=None).num_embeddings  # noqa: E501
 
         msg = (
             f"Vocab size of tokenizer {vocab_size1} doesn't match with model {model1_vocab_len}. "  # noqa: E501
@@ -466,9 +442,7 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
         )  # noqa: E501
         assert vocab_size1 == model1_vocab_len, msg
 
-        model2_vocab_len = self.language_model2.model.resize_token_embeddings(
-            new_num_tokens=None
-        ).num_embeddings  # noqa: E501
+        model2_vocab_len = self.language_model2.model.resize_token_embeddings(new_num_tokens=None).num_embeddings  # noqa: E501
 
         msg = (
             f"Vocab size of tokenizer {vocab_size1} doesn't match with model {model2_vocab_len}. "  # noqa: E501
@@ -492,21 +466,13 @@ class BiAdaptiveModel(nn.Module, BaseBiAdaptiveModel):
         if self.prediction_heads[0].model_type == "text_similarity":
             # init model
             if "dpr" in self.language_model1.model.config.model_type:
-                transformers_model1 = DPRQuestionEncoder(
-                    config=self.language_model1.model.config
-                )  # noqa: E501
+                transformers_model1 = DPRQuestionEncoder(config=self.language_model1.model.config)  # noqa: E501
             else:
-                transformers_model1 = AutoModel.from_config(
-                    config=self.language_model1.model.config
-                )  # noqa: E501
+                transformers_model1 = AutoModel.from_config(config=self.language_model1.model.config)  # noqa: E501
             if "dpr" in self.language_model2.model.config.model_type:
-                transformers_model2 = DPRContextEncoder(
-                    config=self.language_model2.model.config
-                )  # noqa: E501
+                transformers_model2 = DPRContextEncoder(config=self.language_model2.model.config)  # noqa: E501
             else:
-                transformers_model2 = AutoModel.from_config(
-                    config=self.language_model2.model.config
-                )  # noqa: E501
+                transformers_model2 = AutoModel.from_config(config=self.language_model2.model.config)  # noqa: E501
 
             # transfer weights for language model + prediction head
             setattr(

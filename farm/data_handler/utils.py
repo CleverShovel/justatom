@@ -159,7 +159,7 @@ def read_ner_file(filename, sep="\t", proxies=None):
     if not (os.path.exists(filename)):
         logger.info(f" Couldn't find {filename} locally. Trying to download ...")
         _download_extract_downstream_data(filename, proxies)
-    if "conll03-de" in str(filename):
+    if "conll03-de" in str(filename):  # noqa: SIM108
         f = open(filename, encoding="cp1252")  # noqa: SIM115
     else:
         f = open(filename, encoding="utf-8")  # noqa: SIM115
@@ -288,9 +288,7 @@ def read_dpr_json(
                             "title": passage.get("title", ""),
                             "text": passage["text"],
                             "label": "positive",
-                            "external_id": passage.get(
-                                "passage_id", uuid.uuid4().hex.upper()[0:8]
-                            ),  # noqa: E501
+                            "external_id": passage.get("passage_id", uuid.uuid4().hex.upper()[0:8]),  # noqa: E501
                         }
                     )
             elif key in hard_negative_json_keys:
@@ -302,9 +300,7 @@ def read_dpr_json(
                             "title": passage.get("title", ""),
                             "text": passage["text"],
                             "label": "hard_negative",
-                            "external_id": passage.get(
-                                "passage_id", uuid.uuid4().hex.upper()[0:8]
-                            ),  # noqa: E501
+                            "external_id": passage.get("passage_id", uuid.uuid4().hex.upper()[0:8]),  # noqa: E501
                         }
                     )
         sample["passages"] = passages
@@ -379,9 +375,7 @@ def write_squad_predictions(predictions, out_filename, predictions_filename=None
                         dev_labels[q["id"]] = q["answers"][0]["text"]
         not_included = set(list(dev_labels.keys())) - set(list(predictions_json.keys()))
         if len(not_included) > 0:
-            logger.info(
-                f"There were missing predicitons for question ids: {list(not_included)}"
-            )  # noqa: E501
+            logger.info(f"There were missing predicitons for question ids: {list(not_included)}")  # noqa: E501
         for x in not_included:
             predictions_json[x] = ""
 
@@ -434,34 +428,22 @@ def _download_extract_downstream_data(input_file, proxies=None):
 
             # checking files for correctness with md5sum.
             if "germeval14" in taskname:
-                if (
-                    _get_md5checksum(temp_file.name)
-                    != "2c9d5337d7a25b9a4bf6f5672dd091bc"
-                ):  # noqa: E501
+                if _get_md5checksum(temp_file.name) != "2c9d5337d7a25b9a4bf6f5672dd091bc":  # noqa: E501
                     logger.error(
                         f"Someone has changed the file for {taskname}. Please make sure the correct file is used and update the md5sum in farm/data_handler/utils.py"  # noqa: E501
                     )  # noqa: E501
             elif "germeval18" in taskname:
-                if (
-                    _get_md5checksum(temp_file.name)
-                    != "23244fa042dcc39e844635285c455205"
-                ):  # noqa: E501
+                if _get_md5checksum(temp_file.name) != "23244fa042dcc39e844635285c455205":  # noqa: E501
                     logger.error(
                         f"Someone has changed the file for {taskname}. Please make sure the correct file is used and update the md5sum in farm/data_handler/utils.py"  # noqa: E501
                     )  # noqa: E501
             elif "gnad" in taskname:
-                if (
-                    _get_md5checksum(temp_file.name)
-                    != "ef62fe3f59c1ad54cf0271d8532b8f22"
-                ):  # noqa: E501
+                if _get_md5checksum(temp_file.name) != "ef62fe3f59c1ad54cf0271d8532b8f22":  # noqa: E501
                     logger.error(
                         f"Someone has changed the file for {taskname}. Please make sure the correct file is used and update the md5sum in farm/data_handler/utils.py"  # noqa: E501
                     )  # noqa: E501
             elif "germeval17" in taskname:  # noqa: SIM102
-                if (
-                    _get_md5checksum(temp_file.name)
-                    != "f1bf67247dcfe7c3c919b7b20b3f736e"
-                ):  # noqa: E501
+                if _get_md5checksum(temp_file.name) != "f1bf67247dcfe7c3c919b7b20b3f736e":  # noqa: E501
                     logger.error(
                         f"Someone has changed the file for {taskname}. Please make sure the correct file is used and update the md5sum in farm/data_handler/utils.py"  # noqa: E501
                     )  # noqa: E501
@@ -480,28 +462,19 @@ def _conll03get(dataset, directory, language):
 
     # checking files for correctness with md5sum.
     if f"conll03{language}{dataset}" == "conll03detrain":
-        if (
-            _get_md5checksum(str(directory / f"{dataset}.txt"))
-            != "ae4be68b11dc94e0001568a9095eb391"
-        ):  # noqa: E501
+        if _get_md5checksum(str(directory / f"{dataset}.txt")) != "ae4be68b11dc94e0001568a9095eb391":  # noqa: E501
             logger.error(
                 "Someone has changed the file for conll03detrain. This data was collected from an external github repository.\n"  # noqa: E501
                 "Please make sure the correct file is used and update the md5sum in farm/data_handler/utils.py"  # noqa: E501
             )  # noqa: E501
     elif f"conll03{language}{dataset}" == "conll03detest":
-        if (
-            _get_md5checksum(str(directory / f"{dataset}.txt"))
-            != "b8514f44366feae8f317e767cf425f28"
-        ):  # noqa: E501
+        if _get_md5checksum(str(directory / f"{dataset}.txt")) != "b8514f44366feae8f317e767cf425f28":  # noqa: E501
             logger.error(
                 "Someone has changed the file for conll03detest. This data was collected from an external github repository.\n"  # noqa: E501
                 "Please make sure the correct file is used and update the md5sum in farm/data_handler/utils.py"  # noqa: E501
             )  # noqa: E501
     elif f"conll03{language}{dataset}" == "conll03entrain":  # noqa: SIM102
-        if (
-            _get_md5checksum(str(directory / f"{dataset}.txt"))
-            != "11a942ce9db6cc64270372825e964d26"
-        ):  # noqa: E501
+        if _get_md5checksum(str(directory / f"{dataset}.txt")) != "11a942ce9db6cc64270372825e964d26":  # noqa: E501
             logger.error(
                 "Someone has changed the file for conll03entrain. This data was collected from an external github repository.\n"  # noqa: E501
                 "Please make sure the correct file is used and update the md5sum in farm/data_handler/utils.py"  # noqa: E501
@@ -526,9 +499,7 @@ def read_docs_from_txt(
     corpus_lines = 0
 
     with open(filename, encoding=encoding) as f:
-        for line_num, line in enumerate(
-            tqdm(f, desc="Loading Dataset", total=corpus_lines, disable=disable_tqdm)
-        ):  # noqa: E501
+        for line_num, line in enumerate(tqdm(f, desc="Loading Dataset", total=corpus_lines, disable=disable_tqdm)):  # noqa: E501
             line = line.strip()
             if line == delimiter:
                 if len(doc) > 0:
@@ -645,9 +616,7 @@ def _get_random_sentence(all_baskets, forbidden_doc):
             sentence = rand_doc[rand_sent_idx]
             break
     if sentence is None:
-        raise Exception(
-            "Failed to pick out a suitable random substitute for next sentence"
-        )  # noqa: E501
+        raise Exception("Failed to pick out a suitable random substitute for next sentence")  # noqa: E501
     return sentence
 
     # return sequence_a, sequence_b, sample_in_clear_text, num_unused_segments
@@ -664,9 +633,7 @@ def _get_random_doc(all_baskets, forbidden_doc):
             break
 
     if random_doc is None:
-        raise Exception(
-            "Failed to pick out a suitable random substitute for next sequence"
-        )  # noqa: E501
+        raise Exception("Failed to pick out a suitable random substitute for next sequence")  # noqa: E501
     return random_doc
 
 
@@ -769,9 +736,7 @@ def grouper(iterable, n, worker_id=0, total_workers=1):
     return iter(lambda: list(islice(iterable, n)), [])
 
 
-def split_file(
-    filepath, output_dir, docs_per_file=1_000, delimiter="", encoding="utf-8"
-):  # noqa: E501
+def split_file(filepath, output_dir, docs_per_file=1_000, delimiter="", encoding="utf-8"):  # noqa: E501
     total_lines = sum(1 for line in open(filepath, encoding=encoding))  # noqa: SIM115
     output_file_number = 1
     doc_count = 0
@@ -803,9 +768,7 @@ def split_file(
         if lines_to_write:
             filename = output_dir / f"part_{output_file_number}"
             os.makedirs(os.path.dirname(filename), exist_ok=True)
-            write_file = stack.enter_context(
-                open(filename, "w+", encoding=encoding, buffering=10 * 1024 * 1024)
-            )  # noqa: E501
+            write_file = stack.enter_context(open(filename, "w+", encoding=encoding, buffering=10 * 1024 * 1024))  # noqa: E501
             write_file.writelines(lines_to_write)
             write_file.close()
 

@@ -25,10 +25,7 @@ if __name__ == "__main__":
         }
     )
 
-    post = (
-        "This is some post about selling the iphone 12 pro bitch! --- "
-        + random_name.generate_name()
-    )  # noqa: E501
+    post = "This is some post about selling the iphone 12 pro bitch! --- " + random_name.generate_name()  # noqa: E501
 
     message = {"post": post, "id": 2077}
 

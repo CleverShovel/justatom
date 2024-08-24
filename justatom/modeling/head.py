@@ -5,9 +5,7 @@ from justatom.training.loss import init_loss
 
 
 class ANNHead(IHead):
-    def __init__(
-        self, loss_fn: str | torch.nn.Module | None = None, device="cpu", **props
-    ):
+    def __init__(self, loss_fn: str | torch.nn.Module | None = None, device="cpu", **props):
         super(ANNHead, self).__init__()  # noqa: UP008
         props_for_loss = props.get("loss", {})
         self.loss = init_loss(device=device, name=loss_fn, **props_for_loss)
@@ -34,9 +32,7 @@ class ANNHead(IHead):
         return L
 
     @classmethod
-    def dot_product_scores(
-        cls, query_vectors: torch.Tensor, passage_vectors: torch.Tensor
-    ) -> torch.Tensor:
+    def dot_product_scores(cls, query_vectors: torch.Tensor, passage_vectors: torch.Tensor) -> torch.Tensor:
         """
         Calculates dot product similarity scores for two 2-dimensional tensors
 
@@ -49,9 +45,7 @@ class ANNHead(IHead):
         :return: dot_product: similarity score of each query with each context/passage (dimension: n1xn2)
         """  # noqa: E501
         # q_vector: n1 x D, ctx_vectors: n2 x D, result n1 x n2
-        dot_product = torch.matmul(
-            query_vectors, torch.transpose(passage_vectors, 0, 1)
-        )
+        dot_product = torch.matmul(query_vectors, torch.transpose(passage_vectors, 0, 1))
         return dot_product
 
 

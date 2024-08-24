@@ -38,9 +38,7 @@ def sample_to_features_text(sample, tasks, max_seq_len, tokenizer):
             return_special_tokens_mask=True,
         )
 
-        if (len(inputs["input_ids"]) - inputs["special_tokens_mask"].count(1)) != len(
-            sample.tokenized["tokens"]
-        ):  # noqa: E501
+        if (len(inputs["input_ids"]) - inputs["special_tokens_mask"].count(1)) != len(sample.tokenized["tokens"]):  # noqa: E501
             logger.error(
                 f"FastTokenizer encoded sample {sample.clear_text['text']} to "
                 f"{len(inputs['input_ids']) - inputs['special_tokens_mask'].count(1)} tokens, which differs "  # noqa: E501
@@ -78,9 +76,7 @@ def sample_to_features_text(sample, tasks, max_seq_len, tokenizer):
         pad_on_left = False
         segment_ids = pad(segment_ids, max_seq_len, 0, pad_on_left=pad_on_left)
 
-    input_ids = pad(
-        input_ids, max_seq_len, tokenizer.pad_token_id, pad_on_left=pad_on_left
-    )  # noqa: E501
+    input_ids = pad(input_ids, max_seq_len, tokenizer.pad_token_id, pad_on_left=pad_on_left)  # noqa: E501
     padding_mask = pad(padding_mask, max_seq_len, 0, pad_on_left=pad_on_left)
 
     assert len(input_ids) == max_seq_len

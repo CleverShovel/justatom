@@ -225,9 +225,7 @@ class Processor(ABC):
         # we have to delete the tokenizer string from config, because we pass it as Object  # noqa: E501
         del config["tokenizer"]
 
-        processor = cls.load(
-            tokenizer=tokenizer, processor_name=config["processor"], **config
-        )  # noqa: E501
+        processor = cls.load(tokenizer=tokenizer, processor_name=config["processor"], **config)  # noqa: E501
 
         for task_name, task in config["tasks"].items():
             processor.add_task(
@@ -355,9 +353,7 @@ class Processor(ABC):
         text_column_name=None,
     ):
         if type(label_list) is not list:
-            raise ValueError(
-                f"Argument `label_list` must be of type list. Got: f{type(label_list)}"
-            )  # noqa: E501
+            raise ValueError(f"Argument `label_list` must be of type list. Got: f{type(label_list)}")  # noqa: E501
 
         if label_name is None:
             label_name = f"{name}_label"
@@ -382,24 +378,18 @@ class Processor(ABC):
     def _sample_to_features(cls, sample: Sample) -> dict:
         raise NotImplementedError()
 
-    def _dict_to_samples_and_features(
-        self, dictionary: dict, all_dicts=None
-    ) -> [Sample]:  # noqa: E501
+    def _dict_to_samples_and_features(self, dictionary: dict, all_dicts=None) -> [Sample]:  # noqa: E501
         raise NotImplementedError()
 
     def _init_samples_in_baskets(self):
         all_dicts = [b.raw for b in self.baskets]
         for basket in self.baskets:
             try:
-                basket.samples = self._dict_to_samples(
-                    dictionary=basket.raw, all_dicts=all_dicts
-                )  # noqa: E501
+                basket.samples = self._dict_to_samples(dictionary=basket.raw, all_dicts=all_dicts)  # noqa: E501
                 for num, sample in enumerate(basket.samples):
                     sample.id = f"{basket.id_internal}-{num}"
             except Exception as e:
-                logger.error(
-                    f"Could not create sample(s) from this dict: \n {basket.raw}"
-                )  # noqa: E501
+                logger.error(f"Could not create sample(s) from this dict: \n {basket.raw}")  # noqa: E501
                 logger.error(f"Error message: {e}")
 
     def _featurize_samples(self):
@@ -434,9 +424,7 @@ class Processor(ABC):
                 for num, sample in enumerate(basket.samples):
                     sample.id = f"{basket.id_internal}-{num}"
             except Exception as e:
-                logger.error(
-                    f"Could not create sample(s) from this dict: \n {basket.raw}"
-                )  # noqa: E501
+                logger.error(f"Could not create sample(s) from this dict: \n {basket.raw}")  # noqa: E501
                 logger.error(f"Error message: {e}")
 
     @staticmethod
@@ -491,9 +479,7 @@ class Processor(ABC):
             id_external = self._id_from_dict(d)
             if indices:
                 id_internal = indices[id_internal]
-            self.baskets.append(
-                SampleBasket(raw=d, id_external=id_external, id_internal=id_internal)
-            )  # noqa: E501
+            self.baskets.append(SampleBasket(raw=d, id_external=id_external, id_internal=id_internal))  # noqa: E501
 
         self._init_samples_in_baskets()
         self._featurize_samples()
@@ -667,9 +653,7 @@ class TextClassificationProcessor(Processor):
 
         return dicts
 
-    def dataset_from_dicts(
-        self, dicts, indices=None, return_baskets=False, debug=False
-    ):  # noqa: E501
+    def dataset_from_dicts(self, dicts, indices=None, return_baskets=False, debug=False):  # noqa: E501
         self.baskets = []
         # Tokenize in batches
         texts = [x["text"] for x in dicts]
@@ -735,9 +719,7 @@ class TextClassificationProcessor(Processor):
 
         # TODO populate problematic ids
         problematic_ids = set()
-        logger.warning(
-            "Currently no support in Processor for returning problematic ids"
-        )  # noqa: E501
+        logger.warning("Currently no support in Processor for returning problematic ids")  # noqa: E501
         dataset, tensornames = self._create_dataset()
         if return_baskets:
             return dataset, tensornames, problematic_ids, self.baskets
@@ -1034,13 +1016,9 @@ class InferenceProcessor(TextClassificationProcessor):
         # we have to delete the tokenizer string from config, because we pass it as Object  # noqa: E501
         del config["tokenizer"]
 
-        processor = cls.load(
-            tokenizer=tokenizer, processor_name="InferenceProcessor", **config
-        )  # noqa: E501
+        processor = cls.load(tokenizer=tokenizer, processor_name="InferenceProcessor", **config)  # noqa: E501
         for task_name, task in config["tasks"].items():
-            processor.add_task(
-                name=task_name, metric=task["metric"], label_list=task["label_list"]
-            )  # noqa: E501
+            processor.add_task(name=task_name, metric=task["metric"], label_list=task["label_list"])  # noqa: E501
 
         if processor is None:
             raise Exception
@@ -1055,9 +1033,7 @@ class InferenceProcessor(TextClassificationProcessor):
         ret = {}
         return ret
 
-    def dataset_from_dicts(
-        self, dicts, indices=None, return_baskets=False, debug=False
-    ):  # noqa: E501
+    def dataset_from_dicts(self, dicts, indices=None, return_baskets=False, debug=False):  # noqa: E501
         """
         Function to convert input dictionaries containing text into a torch dataset.
         For normal operation with Language Models it calls the superclass' TextClassification.dataset_from_dicts method.
@@ -1070,9 +1046,7 @@ class InferenceProcessor(TextClassificationProcessor):
                 sample = self._dict_to_samples(dictionary=d)
                 features = self._sample_to_features(sample)
                 sample.features = features
-                basket = SampleBasket(
-                    id_internal=None, raw=d, id_external=None, samples=[sample]
-                )
+                basket = SampleBasket(id_internal=None, raw=d, id_external=None, samples=[sample])
                 self.baskets.append(basket)
             if indices and 0 not in indices:
                 pass
@@ -1089,9 +1063,7 @@ class InferenceProcessor(TextClassificationProcessor):
                 ret.append(self.baskets)
             return ret
         else:
-            return super().dataset_from_dicts(
-                dicts=dicts, indices=indices, return_baskets=return_baskets, debug=debug
-            )
+            return super().dataset_from_dicts(dicts=dicts, indices=indices, return_baskets=return_baskets, debug=debug)
 
     # Private method to keep s3e pooling and embedding extraction working
     def _dict_to_samples(self, dictionary: dict, **kwargs) -> [Sample]:
@@ -1202,9 +1174,7 @@ class NERProcessor(Processor):
         dicts = read_ner_file(filename=file, sep=self.delimiter, proxies=self.proxies)
         return dicts
 
-    def dataset_from_dicts(
-        self, dicts, indices=None, return_baskets=False, non_initial_token="X"
-    ):  # noqa: E501
+    def dataset_from_dicts(self, dicts, indices=None, return_baskets=False, non_initial_token="X"):  # noqa: E501
         self.baskets = []
 
         # Perform batch tokenization
@@ -1281,9 +1251,7 @@ class NERProcessor(Processor):
                     label_name = task["label_name"]
                     label_tensor_name = task["label_tensor_name"]
                     labels_word = d[label_name]
-                    labels_token = expand_labels(
-                        labels_word, initial_mask, non_initial_token
-                    )  # noqa: E501
+                    labels_token = expand_labels(labels_word, initial_mask, non_initial_token)  # noqa: E501
                     label_ids = [label_list.index(lt) for lt in labels_token]
                 except ValueError:
                     # Usually triggered if label is not in label list
@@ -1308,9 +1276,7 @@ class NERProcessor(Processor):
                 if label_ids:
                     feature_dict[label_tensor_name] = label_ids
 
-            curr_sample = Sample(
-                id=None, clear_text=d, tokenized=tokenized_dict, features=[feature_dict]
-            )
+            curr_sample = Sample(id=None, clear_text=d, tokenized=tokenized_dict, features=[feature_dict])
             curr_basket = SampleBasket(
                 id_internal=id_internal,
                 raw=d,
@@ -1415,8 +1381,7 @@ class BertStyleLMProcessor(Processor):
 
         if not tokenizer.is_fast:
             raise ValueError(
-                "This processor only supports FastTokenizers. "
-                "Load one by calling Tokenizer.load(..., use_fast=True)"
+                "This processor only supports FastTokenizers. " "Load one by calling Tokenizer.load(..., use_fast=True)"
             )
 
         super(BertStyleLMProcessor, self).__init__(  # noqa: UP008
@@ -1458,9 +1423,7 @@ class BertStyleLMProcessor(Processor):
         # 1) Create samples & truncate (sentence pairs)
         # next sentence prediction ...
         if self.next_sent_pred:
-            assert (
-                len(dicts) > 1
-            ), "Need at least 2 documents to sample random sentences from"  # noqa: E501
+            assert len(dicts) > 1, "Need at least 2 documents to sample random sentences from"  # noqa: E501
             # ...with single sentences
             if self.next_sent_pred_style == "sentence":
                 samples = self._create_sequence_pairs_by_line(dicts)
@@ -1468,9 +1431,7 @@ class BertStyleLMProcessor(Processor):
             elif self.next_sent_pred_style == "bert-style":
                 samples = self._create_sequence_pairs_bert_style(dicts)
             else:
-                raise NotImplementedError(
-                    "next_sent_pred_style has to be 'sentence' or 'bert-style'"
-                )  # noqa: E501
+                raise NotImplementedError("next_sent_pred_style has to be 'sentence' or 'bert-style'")  # noqa: E501
 
         # no next sentence prediction
         else:
@@ -1480,9 +1441,7 @@ class BertStyleLMProcessor(Processor):
         features = []
         vocab_length = len(self.tokenizer.vocab) - 1
         for sample in samples:
-            features.append(
-                self._create_labels(sample=sample, vocab_length=vocab_length)
-            )  # noqa: E501
+            features.append(self._create_labels(sample=sample, vocab_length=vocab_length))  # noqa: E501
 
         # 3) Create dataset
         dataset, tensor_names = convert_features_to_dataset(features=features)
@@ -1536,9 +1495,7 @@ class BertStyleLMProcessor(Processor):
                     tokenized={
                         "tokens": encoded_pairs.encodings[idx].tokens,  # noqa: E501
                         "start_of_word": start_of_word[idx],
-                        "special_tokens_mask": encoded_pairs.encodings[
-                            idx
-                        ].special_tokens_mask,  # noqa: E501
+                        "special_tokens_mask": encoded_pairs.encodings[idx].special_tokens_mask,  # noqa: E501
                         "offsets": encoded_pairs.encodings[idx].offsets,
                     },  # noqa: E501
                     features={
@@ -1557,9 +1514,7 @@ class BertStyleLMProcessor(Processor):
         # TODO optimize for single batch call
         encoded_docs = []
         for doc in docs:
-            encoded_sentences = self.tokenizer.batch_encode_plus(
-                doc, add_special_tokens=False
-            )  # noqa: E501
+            encoded_sentences = self.tokenizer.batch_encode_plus(doc, add_special_tokens=False)  # noqa: E501
             # Create "Start of word mask"
             for e in encoded_sentences.encodings:
                 e.start_of_word = _get_start_of_word(e.words, e.special_tokens_mask)
@@ -1582,9 +1537,7 @@ class BertStyleLMProcessor(Processor):
                     # (incl. special tokens and all other masks)
                     sample, num_unused_segments = self._create_sample_bert_style(
                         chunk=current_chunk,
-                        random_doc=encoded_docs[
-                            random.randint(0, len(encoded_docs) - 1)
-                        ],
+                        random_doc=encoded_docs[random.randint(0, len(encoded_docs) - 1)],
                         max_num_tokens=max_num_tokens,
                     )
                     samples.append(sample)
@@ -1633,9 +1586,7 @@ class BertStyleLMProcessor(Processor):
                     tokenized={
                         "tokens": encoded_pairs.encodings[idx].tokens,  # noqa: E501
                         "start_of_word": start_of_word[idx],
-                        "special_tokens_mask": encoded_pairs.encodings[
-                            idx
-                        ].special_tokens_mask,  # noqa: E501
+                        "special_tokens_mask": encoded_pairs.encodings[idx].special_tokens_mask,  # noqa: E501
                         "offsets": encoded_pairs.encodings[idx].offsets,
                     },  # noqa: E501
                     features={
@@ -1647,9 +1598,7 @@ class BertStyleLMProcessor(Processor):
             )
         return samples
 
-    def _create_sample_bert_style(
-        self, chunk, random_doc, max_num_tokens, prob_next_sentence=0.5
-    ):  # noqa: E501
+    def _create_sample_bert_style(self, chunk, random_doc, max_num_tokens, prob_next_sentence=0.5):  # noqa: E501
         """
         Get one sample from corpus consisting of two sequences. A sequence can consist of more than one sentence.
         With prob. 50% these are two subsequent sequences from one doc. With 50% the second sequence will be a
@@ -1668,7 +1617,7 @@ class BertStyleLMProcessor(Processor):
         # edge case: if we have only a single sequence, we split that one in half
         if len(chunk) == 1:
             # Define splitting point
-            if int(len(chunk[0].tokens) / 2) >= max_num_tokens:
+            if int(len(chunk[0].tokens) / 2) >= max_num_tokens:  # noqa: SIM108
                 boundary = int(max_num_tokens / 2)
             else:
                 boundary = int(len(chunk[0].tokens) / 2)
@@ -1685,13 +1634,7 @@ class BertStyleLMProcessor(Processor):
             )
 
             # TODO make this general for other model types
-            start_of_word = (
-                [0]
-                + chunk[0].start_of_word[:boundary]
-                + [0]
-                + chunk[0].start_of_word[boundary:max_num_tokens]
-                + [0]
-            )  # noqa: E501
+            start_of_word = [0] + chunk[0].start_of_word[:boundary] + [0] + chunk[0].start_of_word[boundary:max_num_tokens] + [0]  # noqa: E501
             padding_mask = [1] * len(input_ids)
 
             assert len(start_of_word) == len(input_ids)
@@ -1772,9 +1715,7 @@ class BertStyleLMProcessor(Processor):
             )
 
             # TODO make this general for other model types
-            start_of_word = (
-                [0] + start_of_word_a + [0] + start_of_word_b[:target_b_length] + [0]
-            )  # noqa: E501
+            start_of_word = [0] + start_of_word_a + [0] + start_of_word_b[:target_b_length] + [0]  # noqa: E501
             padding_mask = [1] * len(input_ids)
 
             if len(input_ids) < self.max_seq_len:
@@ -1834,9 +1775,7 @@ class BertStyleLMProcessor(Processor):
 
         return sample.features
 
-    def _mask_random_words(
-        self, tokens, vocab_length, token_groups=None, max_predictions_per_seq=20
-    ):  # noqa: E501
+    def _mask_random_words(self, tokens, vocab_length, token_groups=None, max_predictions_per_seq=20):  # noqa: E501
         """
         Masking some random tokens for Language Model task with probabilities as in the original BERT paper.
         num_masked.
@@ -2064,14 +2003,10 @@ class SquadProcessor(Processor):
         :param return_baskets: boolean, weather to return the baskets or not (baskets are needed during inference)
         """  # noqa: E501
         # Convert to standard format
-        pre_baskets = [
-            self.convert_qa_input_dict(x) for x in dicts
-        ]  # TODO move to input object conversion  # noqa: E501
+        pre_baskets = [self.convert_qa_input_dict(x) for x in dicts]  # TODO move to input object conversion  # noqa: E501
 
         # Tokenize documents and questions
-        baskets = tokenize_batch_question_answering(
-            pre_baskets, self.tokenizer, indices
-        )  # noqa: E501
+        baskets = tokenize_batch_question_answering(pre_baskets, self.tokenizer, indices)  # noqa: E501
 
         # Split documents into smaller passages to fit max_seq_len
         baskets = self._split_docs_into_passages(baskets)
@@ -2123,19 +2058,14 @@ class SquadProcessor(Processor):
             questions = infer_dict["questions"]
             text = infer_dict["text"]
             uid = infer_dict.get("id", None)
-            qas = [
-                {"question": q, "id": uid, "answers": [], "answer_type": None}
-                for i, q in enumerate(questions)
-            ]
+            qas = [{"question": q, "id": uid, "answers": [], "answer_type": None} for i, q in enumerate(questions)]
             converted = {"qas": qas, "context": text}
             return converted
         except KeyError:
             raise Exception("Input does not have the expected format")  # noqa: B904
 
     def _initialize_special_tokens_count(self):
-        vec = self.tokenizer.build_inputs_with_special_tokens(
-            token_ids_0=["a"], token_ids_1=["b"]
-        )
+        vec = self.tokenizer.build_inputs_with_special_tokens(token_ids_0=["a"], token_ids_1=["b"])
         self.sp_toks_start = vec.index("a")
         self.sp_toks_mid = vec.index("b") - self.sp_toks_start - 1
         self.sp_toks_end = len(vec) - vec.index("b") - 1
@@ -2159,11 +2089,7 @@ class SquadProcessor(Processor):
             # Calculate the number of tokens that can be reserved for the passage. This is calculated by considering  # noqa: E501
             # the max_seq_len, the number of tokens in the question and the number of special tokens that will be added  # noqa: E501
             # when the question and passage are joined (e.g. [CLS] and [SEP])
-            passage_len_t = (
-                self.max_seq_len
-                - len(basket.raw["question_tokens"][: self.max_query_length])
-                - n_special_tokens
-            )  # noqa: E501
+            passage_len_t = self.max_seq_len - len(basket.raw["question_tokens"][: self.max_query_length]) - n_special_tokens  # noqa: E501
 
             # passage_spans is a list of dictionaries where each defines the start and end of each passage  # noqa: E501
             # on both token and character level
@@ -2189,15 +2115,9 @@ class SquadProcessor(Processor):
                 passage_start_c = passage_span["passage_start_c"]
                 passage_end_c = passage_span["passage_end_c"]
 
-                passage_start_of_word = basket.raw["document_start_of_word"][
-                    passage_start_t:passage_end_t
-                ]  # noqa: E501
-                passage_tokens = basket.raw["document_tokens"][
-                    passage_start_t:passage_end_t
-                ]  # noqa: E501
-                passage_text = basket.raw["document_text"][
-                    passage_start_c:passage_end_c
-                ]  # noqa: E501
+                passage_start_of_word = basket.raw["document_start_of_word"][passage_start_t:passage_end_t]  # noqa: E501
+                passage_tokens = basket.raw["document_tokens"][passage_start_t:passage_end_t]  # noqa: E501
+                passage_text = basket.raw["document_text"][passage_start_c:passage_end_c]  # noqa: E501
 
                 clear_text = {
                     "passage_text": passage_text,
@@ -2209,21 +2129,13 @@ class SquadProcessor(Processor):
                     "passage_start_c": passage_start_c,
                     "passage_tokens": passage_tokens,
                     "passage_start_of_word": passage_start_of_word,
-                    "question_tokens": basket.raw["question_tokens"][
-                        : self.max_query_length
-                    ],  # noqa: E501
-                    "question_offsets": basket.raw["question_offsets"][
-                        : self.max_query_length
-                    ],  # noqa: E501
-                    "question_start_of_word": basket.raw["question_start_of_word"][
-                        : self.max_query_length
-                    ],  # noqa: E501
+                    "question_tokens": basket.raw["question_tokens"][: self.max_query_length],  # noqa: E501
+                    "question_offsets": basket.raw["question_offsets"][: self.max_query_length],  # noqa: E501
+                    "question_start_of_word": basket.raw["question_start_of_word"][: self.max_query_length],  # noqa: E501
                 }
                 # The sample ID consists of internal_id and a passage numbering
                 sample_id = f"{basket.id_internal}-{passage_span['passage_id']}"
-                samples.append(
-                    Sample(id=sample_id, clear_text=clear_text, tokenized=tokenized)
-                )
+                samples.append(Sample(id=sample_id, clear_text=clear_text, tokenized=tokenized))
 
             basket.samples = samples
 
@@ -2253,12 +2165,8 @@ class SquadProcessor(Processor):
                         answer_end_c = answer_start_c + answer_len_c - 1
 
                         # Convert character offsets to token offsets on document level
-                        answer_start_t = offset_to_token_idx_vecorized(
-                            basket.raw["document_offsets"], answer_start_c
-                        )  # noqa: E501
-                        answer_end_t = offset_to_token_idx_vecorized(
-                            basket.raw["document_offsets"], answer_end_c
-                        )  # noqa: E501
+                        answer_start_t = offset_to_token_idx_vecorized(basket.raw["document_offsets"], answer_start_c)  # noqa: E501
+                        answer_end_t = offset_to_token_idx_vecorized(basket.raw["document_offsets"], answer_end_c)  # noqa: E501
                         # TODO remove after testing 'offset_to_token_idx_vecorized()'
                         # answer_start_t2 = offset_to_token_idx(doc_offsets, answer_start_c)  # noqa: E501
                         # answer_end_t2 = offset_to_token_idx(doc_offsets, answer_end_c)
@@ -2276,23 +2184,10 @@ class SquadProcessor(Processor):
                         # Check that start and end are contained within this passage
                         # answer_end_t is 0 if the first token is the answer
                         # answer_end_t is passage_len_t if the last token is the answer
-                        if (
-                            passage_len_t > answer_start_t >= 0
-                            and passage_len_t >= answer_end_t >= 0
-                        ):  # noqa: E501
+                        if passage_len_t > answer_start_t >= 0 and passage_len_t >= answer_end_t >= 0:  # noqa: E501
                             # Then adjust the start and end offsets by adding question and special token  # noqa: E501
-                            label_idxs[i][0] = (
-                                self.sp_toks_start
-                                + question_len_t
-                                + self.sp_toks_mid
-                                + answer_start_t
-                            )  # noqa: E501
-                            label_idxs[i][1] = (
-                                self.sp_toks_start
-                                + question_len_t
-                                + self.sp_toks_mid
-                                + answer_end_t
-                            )  # noqa: E501
+                            label_idxs[i][0] = self.sp_toks_start + question_len_t + self.sp_toks_mid + answer_start_t  # noqa: E501
+                            label_idxs[i][1] = self.sp_toks_start + question_len_t + self.sp_toks_mid + answer_end_t  # noqa: E501
                         # If the start or end of the span answer is outside the passage, treat passage as no_answer  # noqa: E501
                         else:
                             label_idxs[i][0] = 0
@@ -2314,9 +2209,7 @@ class SquadProcessor(Processor):
                                     f"Example will not be converted for training/evaluation."  # noqa: E501
                                 )  # noqa: E501
                                 error_in_answer = True
-                                label_idxs[i][
-                                    0
-                                ] = -100  # TODO remove this hack also from featurization  # noqa: E501
+                                label_idxs[i][0] = -100  # TODO remove this hack also from featurization  # noqa: E501
                                 label_idxs[i][1] = -100
                                 break  # Break loop around answers, so the error message is not shown multiple times  # noqa: E501
                             elif answer_indices.strip() != answer_text.strip():
@@ -2325,9 +2218,7 @@ class SquadProcessor(Processor):
                                     f"Example will not be converted for training/evaluation."  # noqa: E501
                                 )  # noqa: E501
                                 error_in_answer = True
-                                label_idxs[i][
-                                    0
-                                ] = -100  # TODO remove this hack also from featurization  # noqa: E501
+                                label_idxs[i][0] = -100  # TODO remove this hack also from featurization  # noqa: E501
                                 label_idxs[i][1] = -100
                                 break  # Break loop around answers, so the error message is not shown multiple times  # noqa: E501
                         ########## end of checking ####################
@@ -2407,18 +2298,9 @@ class SquadProcessor(Processor):
                 span_mask += zero_padding
 
                 # TODO possibly remove these checks after input validation is in place
-                len_check = (
-                    len(input_ids)
-                    == len(padding_mask)
-                    == len(segment_ids)
-                    == len(start_of_word)
-                    == len(span_mask)
-                )  # noqa: E501
+                len_check = len(input_ids) == len(padding_mask) == len(segment_ids) == len(start_of_word) == len(span_mask)  # noqa: E501
                 id_check = len(sample_id) == 3
-                label_check = (
-                    return_baskets
-                    or len(sample.tokenized.get("labels", [])) == self.max_answers
-                )  # noqa: E501
+                label_check = return_baskets or len(sample.tokenized.get("labels", [])) == self.max_answers  # noqa: E501
                 label_check2 = return_baskets or np.all(
                     sample.tokenized["labels"] > -99
                 )  # labels are set to -100 when answer cannot be found  # noqa: E501
@@ -2438,9 +2320,7 @@ class SquadProcessor(Processor):
                         "seq_2_start_t": seq_2_start_t,
                         "span_mask": span_mask,
                     }
-                    sample.features = [
-                        feature_dict
-                    ]  # other processor's features can be lists  # noqa: E501
+                    sample.features = [feature_dict]  # other processor's features can be lists  # noqa: E501
                 else:
                     self.problematic_sample_ids.add(sample.id)
                     sample.features = None
@@ -2574,9 +2454,7 @@ class NaturalQuestionsProcessor(Processor):
         self._initialize_special_tokens_count()
 
     def _initialize_special_tokens_count(self):
-        vec = self.tokenizer.build_inputs_with_special_tokens(
-            token_ids_0=["a"], token_ids_1=["b"]
-        )
+        vec = self.tokenizer.build_inputs_with_special_tokens(token_ids_0=["a"], token_ids_1=["b"])
         self.sp_toks_start = vec.index("a")
         self.sp_toks_mid = vec.index("b") - self.sp_toks_start - 1
         self.sp_toks_end = len(vec) - vec.index("b") - 1
@@ -2599,9 +2477,7 @@ class NaturalQuestionsProcessor(Processor):
         if self._is_nq_dict(dictionary):
             dictionary = self._prepare_dict(dictionary=dictionary)
 
-        dictionary_tokenized = self._apply_tokenization(
-            dictionary, self.tokenizer, self.answer_type_list
-        )[0]  # noqa: E501
+        dictionary_tokenized = self._apply_tokenization(dictionary, self.tokenizer, self.answer_type_list)[0]  # noqa: E501
         n_special_tokens = self.tokenizer.num_special_tokens_to_add(pair=True)
         samples = create_samples_qa_Natural_Question(
             dictionary_tokenized,
@@ -2653,11 +2529,7 @@ class NaturalQuestionsProcessor(Processor):
             annotation = annotations[0]
             # There seem to be cases where there is no answer but an annotation is given as a (-1, -1) long answer  # noqa: E501
             if self._check_no_answer(annotation):
-                dictionary["document_text"] = " ".join(
-                    doc_tokens[
-                        : self.max_seq_len + randint(1, self.downsample_context_size)
-                    ]
-                )  # noqa: E501
+                dictionary["document_text"] = " ".join(doc_tokens[: self.max_seq_len + randint(1, self.downsample_context_size)])  # noqa: E501
             else:
                 # finding earliest start and latest end labels
                 long_answer_start = annotation["long_answer"]["start_token"]
@@ -2670,13 +2542,9 @@ class NaturalQuestionsProcessor(Processor):
                     if s["end_token"] > short_answer_end:
                         short_answer_end = s["end_token"]
 
-                start_threshold = min(long_answer_start, short_answer_start) - randint(
-                    1, self.downsample_context_size
-                )  # noqa: E501
+                start_threshold = min(long_answer_start, short_answer_start) - randint(1, self.downsample_context_size)  # noqa: E501
                 start_threshold = max(0, start_threshold)
-                end_threshold = max(long_answer_end, short_answer_end) + randint(
-                    1, self.downsample_context_size
-                )  # noqa: E501
+                end_threshold = max(long_answer_end, short_answer_end) + randint(1, self.downsample_context_size)  # noqa: E501
 
                 # taking subset of doc text and shift labels
                 sub_document_text = " ".join(doc_tokens[start_threshold:end_threshold])
@@ -2705,9 +2573,7 @@ class NaturalQuestionsProcessor(Processor):
             # There seem to be cases where there is no answer but an annotation is given as a (-1, -1) long answer  # noqa: E501
             if self._check_no_answer(annotation):
                 continue
-            sa_text, sa_start_c = self._unify_short_answers(
-                annotation["short_answers"], doc_text, tok_to_ch
-            )  # noqa: E501
+            sa_text, sa_start_c = self._unify_short_answers(annotation["short_answers"], doc_text, tok_to_ch)  # noqa: E501
             la_text, la_start_c = self._retrieve_long_answer(
                 annotation["long_answer"]["start_token"],  # noqa: E501
                 annotation["long_answer"]["end_token"],
@@ -2740,12 +2606,9 @@ class NaturalQuestionsProcessor(Processor):
 
     @staticmethod
     def _check_no_answer(annotation):
-        if (
-            annotation["long_answer"]["start_token"] > -1
-            or annotation["long_answer"]["end_token"] > -1
-        ):  # noqa: E501
+        if annotation["long_answer"]["start_token"] > -1 or annotation["long_answer"]["end_token"] > -1:  # noqa: E501
             return False
-        for sa in annotation["short_answers"]:
+        for sa in annotation["short_answers"]:  # noqa: SIM110
             if sa["start_token"] > -1 or sa["end_token"] > -1:
                 return False
         else:
@@ -2759,9 +2622,7 @@ class NaturalQuestionsProcessor(Processor):
         first_answer = sample_tok["answers"][0]
         if first_answer["start_t"] < sample_tok["passage_start_t"]:
             return True
-        if first_answer["end_t"] > sample_tok["passage_start_t"] + len(
-            sample_tok["passage_tokens"]
-        ):  # noqa: E501
+        if first_answer["end_t"] > sample_tok["passage_start_t"] + len(sample_tok["passage_tokens"]):  # noqa: E501
             return True
         if first_answer["answer_type"] == "no_answer":  # noqa: SIM103
             return True
@@ -2795,9 +2656,7 @@ class NaturalQuestionsProcessor(Processor):
             short_answer_idxs.append(short_answer["end_token"])
         answer_start_t = min(short_answer_idxs)
         answer_end_t = max(short_answer_idxs)
-        answer_start_c, answer_end_c = self._convert_tok_to_ch(
-            answer_start_t, answer_end_t, tok_to_ch, doc_text
-        )  # noqa: E501
+        answer_start_c, answer_end_c = self._convert_tok_to_ch(answer_start_t, answer_end_t, tok_to_ch, doc_text)  # noqa: E501
         answer_text = doc_text[answer_start_c:answer_end_c]
         assert answer_text == " ".join(doc_text.split()[answer_start_t:answer_end_t])
         return answer_text, answer_start_c
@@ -2858,9 +2717,7 @@ class NaturalQuestionsProcessor(Processor):
             dictionary = self._prepare_dict(dictionary=dictionary)
         basket_id_internal = kwargs["basket_id_internal"]
 
-        dictionary_tokenized = self._apply_tokenization(
-            dictionary, self.tokenizer, self.answer_type_list
-        )[0]  # noqa: E501
+        dictionary_tokenized = self._apply_tokenization(dictionary, self.tokenizer, self.answer_type_list)[0]  # noqa: E501
         n_special_tokens = self.tokenizer.num_special_tokens_to_add(pair=True)
         samples = create_samples_qa_Natural_Question(
             dictionary_tokenized,
@@ -2920,9 +2777,7 @@ class NaturalQuestionsProcessor(Processor):
                 question_text = question
 
             question_tokenized = tokenize_with_metadata(question_text, tokenizer)
-            question_start_of_word = [
-                int(x) for x in question_tokenized["start_of_word"]
-            ]  # noqa: E501
+            question_start_of_word = [int(x) for x in question_tokenized["start_of_word"]]  # noqa: E501
 
             # During inference, there is no_answer type. Also, question might be a str instead of a dict  # noqa: E501
             if type(question) == str:  # noqa: E721
@@ -3095,12 +2950,8 @@ class TextSimilarityProcessor(Processor):
         processor_config_file = Path(load_dir) / "processor_config.json"
         config = json.load(open(processor_config_file))  # noqa: SIM115
         # init tokenizer
-        query_tokenizer = Tokenizer.load(
-            load_dir, tokenizer_class=config["query_tokenizer"], subfolder="query"
-        )  # noqa: E501
-        passage_tokenizer = Tokenizer.load(
-            load_dir, tokenizer_class=config["passage_tokenizer"], subfolder="passage"
-        )  # noqa: E501
+        query_tokenizer = Tokenizer.load(load_dir, tokenizer_class=config["query_tokenizer"], subfolder="query")  # noqa: E501
+        passage_tokenizer = Tokenizer.load(load_dir, tokenizer_class=config["passage_tokenizer"], subfolder="passage")  # noqa: E501
 
         # we have to delete the tokenizer string from config, because we pass it as Object  # noqa: E501
         del config["query_tokenizer"]
@@ -3113,9 +2964,7 @@ class TextSimilarityProcessor(Processor):
             **config,
         )  # noqa: E501
         for task_name, task in config["tasks"].items():
-            processor.add_task(
-                name=task_name, metric=task["metric"], label_list=task["label_list"]
-            )  # noqa: E501
+            processor.add_task(name=task_name, metric=task["metric"], label_list=task["label_list"])  # noqa: E501
 
         if processor is None:
             raise Exception
@@ -3260,9 +3109,7 @@ class TextSimilarityProcessor(Processor):
                     )
 
                     # tokenize query
-                    tokenized_query = self.query_tokenizer.convert_ids_to_tokens(
-                        query_inputs["input_ids"]
-                    )  # noqa: E501
+                    tokenized_query = self.query_tokenizer.convert_ids_to_tokens(query_inputs["input_ids"])  # noqa: E501
 
                     if len(tokenized_query) == 0:
                         logger.warning(
@@ -3278,9 +3125,7 @@ class TextSimilarityProcessor(Processor):
                 except Exception:
                     features = None
 
-            sample = Sample(
-                id=None, clear_text=clear_text, tokenized=tokenized, features=features
-            )
+            sample = Sample(id=None, clear_text=clear_text, tokenized=tokenized, features=features)
             basket.samples = [sample]
         return baskets
 
@@ -3288,11 +3133,7 @@ class TextSimilarityProcessor(Processor):
         for basket in baskets:
             if "passages" in basket.raw:
                 try:
-                    positive_context = list(
-                        filter(
-                            lambda x: x["label"] == "positive", basket.raw["passages"]
-                        )
-                    )  # noqa: E501
+                    positive_context = list(filter(lambda x: x["label"] == "positive", basket.raw["passages"]))  # noqa: E501
                     if self.shuffle_positives:
                         random.shuffle(positive_context)
                     positive_context = positive_context[: self.num_positives]
@@ -3304,22 +3145,12 @@ class TextSimilarityProcessor(Processor):
                     )  # noqa: E501
                     if self.shuffle_negatives:
                         random.shuffle(hard_negative_context)
-                    hard_negative_context = hard_negative_context[
-                        : self.num_hard_negatives
-                    ]  # noqa: E501
+                    hard_negative_context = hard_negative_context[: self.num_hard_negatives]  # noqa: E501
 
-                    positive_ctx_titles = [
-                        passage.get("title", None) for passage in positive_context
-                    ]  # noqa: E501
-                    positive_ctx_texts = [
-                        passage["text"] for passage in positive_context
-                    ]  # noqa: E501
-                    hard_negative_ctx_titles = [
-                        passage.get("title", None) for passage in hard_negative_context
-                    ]  # noqa: E501
-                    hard_negative_ctx_texts = [
-                        passage["text"] for passage in hard_negative_context
-                    ]  # noqa: E501
+                    positive_ctx_titles = [passage.get("title", None) for passage in positive_context]  # noqa: E501
+                    positive_ctx_texts = [passage["text"] for passage in positive_context]  # noqa: E501
+                    hard_negative_ctx_titles = [passage.get("title", None) for passage in hard_negative_context]  # noqa: E501
+                    hard_negative_ctx_texts = [passage["text"] for passage in hard_negative_context]  # noqa: E501
 
                     # all context passages and labels: 1 for positive context and 0 for hard-negative context  # noqa: E501
                     ctx_label = [1] * self.num_positives + [0] * self.num_hard_negatives
@@ -3328,16 +3159,12 @@ class TextSimilarityProcessor(Processor):
                         # concatenate title with positive context passages + negative context passages  # noqa: E501
                         all_ctx = self._combine_title_context(
                             positive_ctx_titles, positive_ctx_texts
-                        ) + self._combine_title_context(
-                            hard_negative_ctx_titles, hard_negative_ctx_texts
-                        )  # noqa: E501
+                        ) + self._combine_title_context(hard_negative_ctx_titles, hard_negative_ctx_texts)  # noqa: E501
                     else:
                         all_ctx = positive_ctx_texts + hard_negative_ctx_texts
 
                     # assign empty string tuples if hard_negative passages less than num_hard_negatives  # noqa: E501
-                    all_ctx += [("", "")] * (
-                        (self.num_positives + self.num_hard_negatives) - len(all_ctx)
-                    )  # noqa: E501
+                    all_ctx += [("", "")] * ((self.num_positives + self.num_hard_negatives) - len(all_ctx))  # noqa: E501
 
                     ctx_inputs = self.passage_tokenizer.batch_encode_plus(
                         all_ctx,
@@ -3349,27 +3176,18 @@ class TextSimilarityProcessor(Processor):
                     )
 
                     # TODO check if we need this and potentially remove
-                    ctx_segment_ids = np.zeros_like(
-                        ctx_inputs["token_type_ids"], dtype=np.int32
-                    )  # noqa: E501
+                    ctx_segment_ids = np.zeros_like(ctx_inputs["token_type_ids"], dtype=np.int32)  # noqa: E501
 
                     # get tokens in string format
-                    tokenized_passage = [
-                        self.passage_tokenizer.convert_ids_to_tokens(ctx)
-                        for ctx in ctx_inputs["input_ids"]
-                    ]  # noqa: E501
+                    tokenized_passage = [self.passage_tokenizer.convert_ids_to_tokens(ctx) for ctx in ctx_inputs["input_ids"]]  # noqa: E501
 
                     # for DPR we only have one sample containing query and corresponding (multiple) context features  # noqa: E501
                     sample = basket.samples[0]
-                    sample.clear_text["passages"] = (
-                        positive_context + hard_negative_context
-                    )  # noqa: E501
+                    sample.clear_text["passages"] = positive_context + hard_negative_context  # noqa: E501
                     sample.tokenized["passages_tokens"] = tokenized_passage
                     sample.features[0]["passage_input_ids"] = ctx_inputs["input_ids"]
                     sample.features[0]["passage_segment_ids"] = ctx_segment_ids
-                    sample.features[0]["passage_attention_mask"] = ctx_inputs[
-                        "attention_mask"
-                    ]  # noqa: E501
+                    sample.features[0]["passage_attention_mask"] = ctx_inputs["attention_mask"]  # noqa: E501
                     sample.features[0]["label_ids"] = ctx_label
                 except Exception:
                     basket.samples[0].features = None

@@ -30,9 +30,7 @@ from justatom.tooling import stl
 dotenv.load_dotenv()
 
 
-logger.info(
-    f"Enable MPS fallback = {os.environ.get('PYTORCH_ENABLE_MPS_FALLBACK', -1)}"
-)
+logger.info(f"Enable MPS fallback = {os.environ.get('PYTORCH_ENABLE_MPS_FALLBACK', -1)}")
 
 
 def to_numpy(container):
@@ -61,9 +59,7 @@ def random_split(ds: ConcatDataset, lengths: list[int]):
     :param lengths: Lengths of splits to be produced.
     """
     if sum(lengths) != len(ds):
-        raise ValueError(
-            "Sum of input lengths does not equal the length of the input dataset!"
-        )
+        raise ValueError("Sum of input lengths does not equal the length of the input dataset!")
 
     try:
         idx_dataset = np.where(np.array(ds.cumulative_sizes) > lengths[0])[0][0]
@@ -116,9 +112,7 @@ def check_store_and_message(store: WeaviateDocStore, delete_if_not_empty: bool):
     return store
 
 
-def wrapper_docs_with_queries(
-    pl_data: pl.DataFrame, search_field: str, content_field: str, batch_size: int = 128
-) -> list[dict]:
+def wrapper_docs_with_queries(pl_data: pl.DataFrame, search_field: str, content_field: str, batch_size: int = 128) -> list[dict]:
     pl_data = pl_data.group_by(content_field).agg(pl.col(search_field))
     queries, documents = (
         pl_data.select(search_field).to_series().to_list(),
@@ -152,19 +146,11 @@ def igni_runners(
             raise ValueError(msg)
         lm_model = ILanguageModel.load(model_name_or_path)
         # processor = IProcessor.load(model_name_or_path)
-        ix_processor = INFERProcessor(
-            ITokenizer.from_pretrained(model_name_or_path), prefix=content_prefix
-        )
-        ir_processor = INFERProcessor(
-            ITokenizer.from_pretrained(model_name_or_path), prefix=query_prefix
-        )
+        ix_processor = INFERProcessor(ITokenizer.from_pretrained(model_name_or_path), prefix=content_prefix)
+        ir_processor = INFERProcessor(ITokenizer.from_pretrained(model_name_or_path), prefix=query_prefix)
         runner = M1LMRunner(model=lm_model, prediction_heads=[], device=device)
-        ix_runner = IndexerAPI.named(
-            index_by, store=store, runner=runner, processor=ix_processor, device=device
-        )
-        ir_runner = RetrieverApi.named(
-            index_by, store=store, runner=runner, processor=ir_processor, device=device
-        )
+        ix_runner = IndexerAPI.named(index_by, store=store, runner=runner, processor=ix_processor, device=device)
+        ir_runner = RetrieverApi.named(index_by, store=store, runner=runner, processor=ir_processor, device=device)
 
     return ix_runner, ir_runner
 
@@ -199,16 +185,10 @@ async def maybe_index_and_ir(
         query_prefix=query_prefix,
         content_prefix=content_prefix,
     )
-    assert (
-        search_field in pl_data.columns
-    ), f"Search field [{search_field}] is not present within dataset."
-    assert (
-        content_field in pl_data.columns
-    ), f"Content field [{content_field}] is not present within dataset."
+    assert search_field in pl_data.columns, f"Search field [{search_field}] is not present within dataset."
+    assert content_field in pl_data.columns, f"Content field [{content_field}] is not present within dataset."
 
-    docs = wrapper_docs_with_queries(
-        pl_data, search_field=search_field, content_field=content_field
-    )
+    docs = wrapper_docs_with_queries(pl_data, search_field=search_field, content_field=content_field)
     print()
     await ix_runner.index(documents=docs, batch_size=batch_size, device=device)
     print()
@@ -230,11 +210,7 @@ async def main(
     **props,
 ):
     collection_name = "Document" if collection_name is None else collection_name
-    dataset_name_or_path = (
-        Path(dataset_name_or_path) / "eval.csv"
-        if Path(dataset_name_or_path).is_dir()
-        else dataset_name_or_path
-    )
+    dataset_name_or_path = Path(dataset_name_or_path) / "eval.csv" if Path(dataset_name_or_path).is_dir() else dataset_name_or_path
     maybe_df_or_iter = DatasetApi.named(dataset_name_or_path).iterator()
     if isinstance(maybe_df_or_iter, pl.DataFrame):
         pl_data = maybe_df_or_iter
@@ -276,8 +252,7 @@ async def main(
     print()
     comp_eval_metrics = {k: list(v.compute()) for k, v in eval_metrics.items()}
     comp_eval_metrics = [
-        {"name": k, "mean": v[0], "std": v[1], "dataset": str(dataset_name_or_path)}
-        for k, v in comp_eval_metrics.items()
+        {"name": k, "mean": v[0], "std": v[1], "dataset": str(dataset_name_or_path)} for k, v in comp_eval_metrics.items()
     ]
     pl_metrics = pl.from_dicts(comp_eval_metrics)
     snap_eval_metrics = [] if eval_metrics is None else eval_metrics

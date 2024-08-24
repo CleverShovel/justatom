@@ -75,9 +75,7 @@ class Evaluator:
                 label_all[head_num] += list(to_numpy(labels[head_num]))
                 if head.model_type == "span_classification":
                     ids_all[head_num] += list(to_numpy(batch["id"]))
-                    passage_start_t_all[head_num] += list(
-                        to_numpy(batch["passage_start_t"])
-                    )  # noqa: E501
+                    passage_start_t_all[head_num] += list(to_numpy(batch["passage_start_t"]))  # noqa: E501
                     if calibrate_conf_scores:
                         logits_all[head_num] += list(to_numpy(logits))
 
@@ -102,10 +100,7 @@ class Evaluator:
                 logger.info(
                     f"temperature used for confidence scores after calibration: {temperature_current}"  # noqa: E501
                 )  # noqa: E501
-                temperature_change = (
-                    abs(temperature_current - temperature_previous)
-                    / temperature_previous
-                ) * 100.0  # noqa: E501
+                temperature_change = (abs(temperature_current - temperature_previous) / temperature_previous) * 100.0  # noqa: E501
                 if temperature_change > 50:
                     logger.warning(
                         f"temperature used for calibration of confidence scores changed by more than {temperature_change} percent"  # noqa: E501
@@ -137,9 +132,7 @@ class Evaluator:
             # Select type of report depending on prediction head output type
             if self.report:
                 try:
-                    result["report"] = compute_report_metrics(
-                        head, preds_all[head_num], label_all[head_num]
-                    )  # noqa: E501
+                    result["report"] = compute_report_metrics(head, preds_all[head_num], label_all[head_num])  # noqa: E501
                 except:  # noqa: E722
                     logger.error(
                         f"Couldn't create eval report for head {head_num} with following preds and labels:"  # noqa: E501
@@ -156,9 +149,7 @@ class Evaluator:
         return all_results
 
     @staticmethod
-    def log_results(
-        results, dataset_name, steps, logging=True, print=True, num_fold=None
-    ):  # noqa: E501
+    def log_results(results, dataset_name, steps, logging=True, print=True, num_fold=None):  # noqa: E501
         # Print a header
         header = "\n\n"
         header += BUSH_SEP + "\n"
@@ -191,11 +182,7 @@ class Evaluator:
                 if print:
                     if metric_name == "report":
                         if isinstance(metric_val, str) and len(metric_val) > 8000:
-                            metric_val = (
-                                metric_val[:7500]
-                                + "\n ............................. \n"
-                                + metric_val[-500:]
-                            )  # noqa: E501
+                            metric_val = metric_val[:7500] + "\n ............................. \n" + metric_val[-500:]  # noqa: E501
                         logger.info(f"{metric_name}: \n {metric_val}")
                     else:
                         if metric_name not in [

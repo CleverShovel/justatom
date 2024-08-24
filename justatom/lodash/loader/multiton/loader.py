@@ -29,10 +29,7 @@ class Loader(Base):
         name = cls.__name__ if name is None else name
         sig = signature(cls.classes[name]["klass"])
         unused_args = {k: v for k, v in kwargs.items() if k not in sig.parameters}
-        logger.debug(
-            f"Got more parameters than needed for loading {name}: {unused_args}. "
-            f"Those won't be used!"
-        )
+        logger.debug(f"Got more parameters than needed for loading {name}: {unused_args}. " f"Those won't be used!")
         instance = cls.classes[name]["instance"]
         uhid = hashlib.md5(cloudpickle.dumps((args, kwargs))).hexdigest()
         if uhid not in instance.keys():  # noqa: SIM118

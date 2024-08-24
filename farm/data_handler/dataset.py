@@ -26,9 +26,7 @@ def convert_features_to_dataset(features):
     for t_name in tensor_names:
         # Conversion of floats
         if t_name == "regression_label_ids":
-            cur_tensor = torch.tensor(
-                [sample[t_name] for sample in features], dtype=torch.float32
-            )  # noqa: E501
+            cur_tensor = torch.tensor([sample[t_name] for sample in features], dtype=torch.float32)  # noqa: E501
         else:
             try:
                 # Checking weather a non-integer will be silently converted to torch.long  # noqa: E501
@@ -53,9 +51,7 @@ def convert_features_to_dataset(features):
                 )  # noqa: E501
 
             # Convert all remaining python objects to torch long tensors
-            cur_tensor = torch.tensor(
-                [sample[t_name] for sample in features], dtype=torch.long
-            )  # noqa: E501
+            cur_tensor = torch.tensor([sample[t_name] for sample in features], dtype=torch.long)  # noqa: E501
 
         all_tensors.append(cur_tensor)
 

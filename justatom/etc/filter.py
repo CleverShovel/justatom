@@ -88,9 +88,7 @@ class LogicalFilterClause(ABC):
 
     """  # noqa: E501
 
-    def __init__(
-        self, conditions: list[Union["LogicalFilterClause", "ComparisonOperation"]]
-    ):  # noqa: E501
+    def __init__(self, conditions: list[Union["LogicalFilterClause", "ComparisonOperation"]]):  # noqa: E501
         self.conditions = conditions
 
     @abstractmethod
@@ -98,9 +96,7 @@ class LogicalFilterClause(ABC):
         pass
 
     @classmethod
-    def parse(
-        cls, filter_term: dict | list[dict]
-    ) -> Union["LogicalFilterClause", "ComparisonOperation"]:  # noqa: E501
+    def parse(cls, filter_term: dict | list[dict]) -> Union["LogicalFilterClause", "ComparisonOperation"]:  # noqa: E501
         """
         Parses a filter dictionary/list and returns a LogicalFilterClause instance.
 
@@ -157,14 +153,9 @@ class LogicalFilterClause(ABC):
         Merges Elasticsearch range queries that perform on the same metadata field.
         """
 
-        range_conditions = [
-            cond["range"]
-            for cond in filter(lambda condition: "range" in condition, conditions)
-        ]  # noqa: E501
+        range_conditions = [cond["range"] for cond in filter(lambda condition: "range" in condition, conditions)]  # noqa: E501
         if range_conditions:
-            conditions = [
-                condition for condition in conditions if "range" not in condition
-            ]  # noqa: E501
+            conditions = [condition for condition in conditions if "range" not in condition]  # noqa: E501
             range_conditions_dict = nested_defaultdict()
             for condition in range_conditions:
                 field_name = list(condition.keys())[0]
@@ -187,9 +178,7 @@ class LogicalFilterClause(ABC):
 
 
 class ComparisonOperation(ABC):
-    def __init__(
-        self, field_name: str, comparison_value: str | int | float | bool | list
-    ):  # noqa: E501
+    def __init__(self, field_name: str, comparison_value: str | int | float | bool | list):  # noqa: E501
         self.field_name = field_name
         self.comparison_value = comparison_value
 
@@ -198,45 +187,27 @@ class ComparisonOperation(ABC):
         pass
 
     @classmethod
-    def parse(
-        cls, field_name, comparison_clause: dict | list | str | float
-    ) -> list["ComparisonOperation"]:  # noqa: E501
+    def parse(cls, field_name, comparison_clause: dict | list | str | float) -> list["ComparisonOperation"]:  # noqa: E501
         comparison_operations: list[ComparisonOperation] = []
 
         if isinstance(comparison_clause, dict):
             for comparison_operation, comparison_value in comparison_clause.items():
                 if comparison_operation == "$eq":
-                    comparison_operations.append(
-                        EqOperation(field_name, comparison_value)
-                    )  # noqa: E501
+                    comparison_operations.append(EqOperation(field_name, comparison_value))  # noqa: E501
                 elif comparison_operation == "$in":
-                    comparison_operations.append(
-                        InOperation(field_name, comparison_value)
-                    )  # noqa: E501
+                    comparison_operations.append(InOperation(field_name, comparison_value))  # noqa: E501
                 elif comparison_operation == "$ne":
-                    comparison_operations.append(
-                        NeOperation(field_name, comparison_value)
-                    )  # noqa: E501
+                    comparison_operations.append(NeOperation(field_name, comparison_value))  # noqa: E501
                 elif comparison_operation == "$nin":
-                    comparison_operations.append(
-                        NinOperation(field_name, comparison_value)
-                    )  # noqa: E501
+                    comparison_operations.append(NinOperation(field_name, comparison_value))  # noqa: E501
                 elif comparison_operation == "$gt":
-                    comparison_operations.append(
-                        GtOperation(field_name, comparison_value)
-                    )  # noqa: E501
+                    comparison_operations.append(GtOperation(field_name, comparison_value))  # noqa: E501
                 elif comparison_operation == "$gte":
-                    comparison_operations.append(
-                        GteOperation(field_name, comparison_value)
-                    )  # noqa: E501
+                    comparison_operations.append(GteOperation(field_name, comparison_value))  # noqa: E501
                 elif comparison_operation == "$lt":
-                    comparison_operations.append(
-                        LtOperation(field_name, comparison_value)
-                    )  # noqa: E501
+                    comparison_operations.append(LtOperation(field_name, comparison_value))  # noqa: E501
                 elif comparison_operation == "$lte":
-                    comparison_operations.append(
-                        LteOperation(field_name, comparison_value)
-                    )  # noqa: E501
+                    comparison_operations.append(LteOperation(field_name, comparison_value))  # noqa: E501
 
         # No comparison operator is given, so we use the default operators "$in" if the comparison value is a list and  # noqa: E501
         # "$eq" in every other case
@@ -278,9 +249,7 @@ class ComparisonOperation(ABC):
         (https://github.com/semi-technologies/weaviate/issues/1717)
         """  # noqa: E501
 
-    def _get_weaviate_datatype(
-        self, value: str | int | float | bool | None = None
-    ) -> tuple[str, str | int | float | bool]:
+    def _get_weaviate_datatype(self, value: str | int | float | bool | None = None) -> tuple[str, str | int | float | bool]:
         """
         Determines the type of the comparison value and converts it to RFC3339 format if it is as date,
         as Weaviate requires dates to be in RFC3339 format including the time and timezone.
@@ -297,7 +266,7 @@ class ComparisonOperation(ABC):
                 data_type = "valueDate"
             # Comparison value is a plain string
             except ValueError:
-                if self.field_name == "content":
+                if self.field_name == "content":  # noqa: SIM108
                     data_type = "valueText"
                 else:
                     data_type = "valueString"
@@ -325,27 +294,20 @@ class NotOperation(LogicalFilterClause):
         return not any(condition.evaluate(fields) for condition in self.conditions)
 
     def convert_to_elasticsearch(self) -> dict[str, dict]:
-        conditions = [
-            condition.convert_to_elasticsearch() for condition in self.conditions
-        ]  # noqa: E501
+        conditions = [condition.convert_to_elasticsearch() for condition in self.conditions]  # noqa: E501
         conditions = self._merge_es_range_queries(conditions)
         return {"bool": {"must_not": conditions}}
 
     def convert_to_sql(self, meta_document_orm):
         conditions = [
-            meta_document_orm.document_id.in_(
-                condition.convert_to_sql(meta_document_orm)
-            )
-            for condition in self.conditions
+            meta_document_orm.document_id.in_(condition.convert_to_sql(meta_document_orm)) for condition in self.conditions
         ]
         return select(meta_document_orm.document_id).filter(~or_(*conditions))
 
     def convert_to_weaviate(
         self,
     ) -> dict[str, str | int | float | bool | list[dict]]:
-        conditions = [
-            condition.invert().convert_to_weaviate() for condition in self.conditions
-        ]  # noqa: E501
+        conditions = [condition.invert().convert_to_weaviate() for condition in self.conditions]  # noqa: E501
         if len(conditions) > 1:
             # Conditions in self.conditions are by default combined with AND which becomes OR according to DeMorgan  # noqa: E501
             return {"operator": "Or", "operands": conditions}
@@ -355,9 +317,7 @@ class NotOperation(LogicalFilterClause):
     def convert_to_pinecone(
         self,
     ) -> dict[str, str | int | float | bool | list[dict]]:
-        conditions = [
-            condition.invert().convert_to_pinecone() for condition in self.conditions
-        ]  # noqa: E501
+        conditions = [condition.invert().convert_to_pinecone() for condition in self.conditions]  # noqa: E501
         if len(conditions) > 1:
             # Conditions in self.conditions are by default combined with AND which becomes OR according to DeMorgan  # noqa: E501
             return {"$or": conditions}
@@ -384,18 +344,13 @@ class AndOperation(LogicalFilterClause):
         return all(condition.evaluate(fields) for condition in self.conditions)
 
     def convert_to_elasticsearch(self) -> dict[str, dict]:
-        conditions = [
-            condition.convert_to_elasticsearch() for condition in self.conditions
-        ]  # noqa: E501
+        conditions = [condition.convert_to_elasticsearch() for condition in self.conditions]  # noqa: E501
         conditions = self._merge_es_range_queries(conditions)
         return {"bool": {"must": conditions}}
 
     def convert_to_sql(self, meta_document_orm):
         conditions = [
-            meta_document_orm.document_id.in_(
-                condition.convert_to_sql(meta_document_orm)
-            )
-            for condition in self.conditions
+            meta_document_orm.document_id.in_(condition.convert_to_sql(meta_document_orm)) for condition in self.conditions
         ]
         return select(meta_document_orm.document_id).filter(and_(*conditions))
 
@@ -420,18 +375,13 @@ class OrOperation(LogicalFilterClause):
         return any(condition.evaluate(fields) for condition in self.conditions)
 
     def convert_to_elasticsearch(self) -> dict[str, dict]:
-        conditions = [
-            condition.convert_to_elasticsearch() for condition in self.conditions
-        ]  # noqa: E501
+        conditions = [condition.convert_to_elasticsearch() for condition in self.conditions]  # noqa: E501
         conditions = self._merge_es_range_queries(conditions)
         return {"bool": {"should": conditions}}
 
     def convert_to_sql(self, meta_document_orm):
         conditions = [
-            meta_document_orm.document_id.in_(
-                condition.convert_to_sql(meta_document_orm)
-            )
-            for condition in self.conditions
+            meta_document_orm.document_id.in_(condition.convert_to_sql(meta_document_orm)) for condition in self.conditions
         ]
         return select(meta_document_orm.document_id).filter(or_(*conditions))
 
@@ -565,9 +515,7 @@ class NeOperation(ComparisonOperation):
     ) -> dict[str, dict[str, dict[str, dict[str, str | int | float | bool]]]]:
         if isinstance(self.comparison_value, list):
             raise ValueError("Use '$nin' operation for lists as comparison values.")
-        return {
-            "bool": {"must_not": {"term": {self.field_name: self.comparison_value}}}
-        }  # noqa: E501
+        return {"bool": {"must_not": {"term": {self.field_name: self.comparison_value}}}}  # noqa: E501
 
     def convert_to_sql(self, meta_document_orm):
         return select([meta_document_orm.document_id]).where(
@@ -608,9 +556,7 @@ class NinOperation(ComparisonOperation):
     ) -> dict[str, dict[str, dict[str, dict[str, list]]]]:
         if not isinstance(self.comparison_value, list):
             raise ValueError("'$nin' operation requires comparison value to be a list.")
-        return {
-            "bool": {"must_not": {"terms": {self.field_name: self.comparison_value}}}
-        }  # noqa: E501
+        return {"bool": {"must_not": {"terms": {self.field_name: self.comparison_value}}}}  # noqa: E501
 
     def convert_to_sql(self, meta_document_orm):
         return select([meta_document_orm.document_id]).where(
@@ -682,9 +628,7 @@ class GtOperation(ComparisonOperation):
 
     def convert_to_pinecone(self) -> dict[str, dict[str, float | int]]:
         if not isinstance(self.comparison_value, (float, int)):  # noqa: UP038
-            raise ValueError(
-                "Comparison value for '$gt' operation must be a float or int."
-            )  # noqa: E501
+            raise ValueError("Comparison value for '$gt' operation must be a float or int.")  # noqa: E501
         return {self.field_name: {"$gt": self.comparison_value}}
 
     def invert(self) -> "LteOperation":
@@ -705,9 +649,7 @@ class GteOperation(ComparisonOperation):
         self,
     ) -> dict[str, dict[str, dict[str, str | float | int]]]:
         if isinstance(self.comparison_value, list):
-            raise ValueError(
-                "Comparison value for '$gte' operation must not be a list."
-            )  # noqa: E501
+            raise ValueError("Comparison value for '$gte' operation must not be a list.")  # noqa: E501
         return {"range": {self.field_name: {"gte": self.comparison_value}}}
 
     def convert_to_sql(self, meta_document_orm):
@@ -719,9 +661,7 @@ class GteOperation(ComparisonOperation):
     def convert_to_weaviate(self) -> dict[str, list[str] | str | float | int]:
         comp_value_type, comp_value = self._get_weaviate_datatype()
         if isinstance(comp_value, list):
-            raise ValueError(
-                "Comparison value for '$gte' operation must not be a list."
-            )  # noqa: E501
+            raise ValueError("Comparison value for '$gte' operation must not be a list.")  # noqa: E501
         return {
             "path": [self.field_name],
             "operator": "GreaterThanEqual",
@@ -730,9 +670,7 @@ class GteOperation(ComparisonOperation):
 
     def convert_to_pinecone(self) -> dict[str, dict[str, float | int]]:
         if not isinstance(self.comparison_value, (float, int)):  # noqa: UP038
-            raise ValueError(
-                "Comparison value for '$gte' operation must be a float or int."
-            )  # noqa: E501
+            raise ValueError("Comparison value for '$gte' operation must be a float or int.")  # noqa: E501
         return {self.field_name: {"$gte": self.comparison_value}}
 
     def invert(self) -> "LtOperation":
@@ -774,9 +712,7 @@ class LtOperation(ComparisonOperation):
 
     def convert_to_pinecone(self) -> dict[str, dict[str, float | int]]:
         if not isinstance(self.comparison_value, (float, int)):  # noqa: UP038
-            raise ValueError(
-                "Comparison value for '$lt' operation must be a float or int."
-            )  # noqa: E501
+            raise ValueError("Comparison value for '$lt' operation must be a float or int.")  # noqa: E501
         return {self.field_name: {"$lt": self.comparison_value}}
 
     def invert(self) -> "GteOperation":
@@ -797,9 +733,7 @@ class LteOperation(ComparisonOperation):
         self,
     ) -> dict[str, dict[str, dict[str, str | float | int]]]:
         if isinstance(self.comparison_value, list):
-            raise ValueError(
-                "Comparison value for '$lte' operation must not be a list."
-            )  # noqa: E501
+            raise ValueError("Comparison value for '$lte' operation must not be a list.")  # noqa: E501
         return {"range": {self.field_name: {"lte": self.comparison_value}}}
 
     def convert_to_sql(self, meta_document_orm):
@@ -811,9 +745,7 @@ class LteOperation(ComparisonOperation):
     def convert_to_weaviate(self) -> dict[str, list[str] | str | float | int]:
         comp_value_type, comp_value = self._get_weaviate_datatype()
         if isinstance(comp_value, list):
-            raise ValueError(
-                "Comparison value for '$lte' operation must not be a list."
-            )  # noqa: E501
+            raise ValueError("Comparison value for '$lte' operation must not be a list.")  # noqa: E501
         return {
             "path": [self.field_name],
             "operator": "LessThanEqual",
@@ -822,9 +754,7 @@ class LteOperation(ComparisonOperation):
 
     def convert_to_pinecone(self) -> dict[str, dict[str, float | int]]:
         if not isinstance(self.comparison_value, (float, int)):  # noqa: UP038
-            raise ValueError(
-                "Comparison value for '$lte' operation must be a float or int."
-            )  # noqa: E501
+            raise ValueError("Comparison value for '$lte' operation must be a float or int.")  # noqa: E501
         return {self.field_name: {"$lte": self.comparison_value}}
 
     def invert(self) -> "GtOperation":

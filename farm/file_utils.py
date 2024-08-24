@@ -28,13 +28,7 @@ try:
 
     torch_cache_home = Path(_get_torch_home())
 except ImportError:
-    torch_cache_home = Path(
-        os.path.expanduser(
-            os.getenv(
-                "TORCH_HOME", Path(os.getenv("XDG_CACHE_HOME", "~/.cache")) / "torch"
-            )
-        )
-    )
+    torch_cache_home = Path(os.path.expanduser(os.getenv("TORCH_HOME", Path(os.getenv("XDG_CACHE_HOME", "~/.cache")) / "torch")))
 default_cache_path = torch_cache_home / "farm"
 
 try:
@@ -124,9 +118,7 @@ def download_from_s3(
     logger.info(f"Downloading from {s3_url} to {cache_dir}")
 
     if access_key or secret_access_key:
-        assert (
-            secret_access_key and access_key
-        ), "You only supplied one of secret_access_key and access_key. We need both."  # noqa: E501
+        assert secret_access_key and access_key, "You only supplied one of secret_access_key and access_key. We need both."  # noqa: E501
 
         session = boto3.Session(
             aws_access_key_id=access_key,
@@ -155,9 +147,7 @@ def download_from_s3(
             if os.path.exists(filepath):
                 logger.info(f"Skipping {obj.key} (exists locally)")
             else:
-                logger.info(
-                    f"Downloading {obj.key} to {filepath} (size: {obj.size/1000000} MB)"
-                )  # noqa: E501
+                logger.info(f"Downloading {obj.key} to {filepath} (size: {obj.size/1000000} MB)")  # noqa: E501
                 bucket.download_file(obj.key, filepath)
     return path
 
@@ -356,9 +346,7 @@ def unnestConfig(config):
         if gk != "task":
             for k, v in gv.items():
                 if isinstance(v, list):
-                    if (
-                        k != "layer_dims"
-                    ):  # exclude layer dims, since it is already a list
+                    if k != "layer_dims":  # exclude layer dims, since it is already a list
                         nestedKeys.append([gk, k])
                         nestedVals.append(v)
                 elif isinstance(v, dict):
@@ -372,9 +360,7 @@ def unnestConfig(config):
             % (", ".join(".".join(x) for x in nestedKeys))
         )
         unnestedConfig = []
-        mesh = np.meshgrid(
-            *nestedVals
-        )  # get all combinations, each dimension corresponds to one parameter type
+        mesh = np.meshgrid(*nestedVals)  # get all combinations, each dimension corresponds to one parameter type
         # flatten mesh into shape: [num_parameters, num_combinations] so we can iterate in 2d over any paramter combinations  # noqa: E501
         mesh = [x.flatten() for x in mesh]
 
@@ -383,9 +369,7 @@ def unnestConfig(config):
             tempconfig = config.copy()
             for j, k in enumerate(nestedKeys):
                 if isinstance(k, str):
-                    tempconfig[k] = mesh[j][
-                        i
-                    ]  # get ith val of correct param value and overwrite original config  # noqa: E501
+                    tempconfig[k] = mesh[j][i]  # get ith val of correct param value and overwrite original config  # noqa: E501
                 elif len(k) == 2:
                     tempconfig[k[0]][k[1]] = mesh[j][i]  # set nested dictionary keys
                 else:

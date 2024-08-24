@@ -128,10 +128,7 @@ def initialize_optimizer(
         )
 
     if (schedule_opts is not None) and (not isinstance(schedule_opts, dict)):
-        raise TypeError(
-            "Parameter schedule_opts must be None or "
-            f"an instance of dict but was {type(schedule_opts)}!"
-        )
+        raise TypeError("Parameter schedule_opts must be None or " f"an instance of dict but was {type(schedule_opts)}!")
 
     num_train_optimization_steps = int(n_batches / grad_acc_steps) * n_epochs
 
@@ -169,9 +166,7 @@ def initialize_optimizer(
     optimizer = _get_optim(model, optimizer_opts)
 
     # Adjust for parallel training + amp
-    model, optimizer = optimize_model(
-        model, device, local_rank, optimizer, distributed, use_amp
-    )  # noqa: E501
+    model, optimizer = optimize_model(model, device, local_rank, optimizer, distributed, use_amp)  # noqa: E501
 
     # Get learning rate schedule - moved below to supress warning
     scheduler = get_scheduler(optimizer, schedule_opts)
@@ -202,27 +197,17 @@ def _get_optim(model, opts):
     if no_decay:
         optimizable_parameters = [
             {
-                "params": [
-                    p
-                    for n, p in model.named_parameters()
-                    if not any(nd in n for nd in no_decay) and p.requires_grad
-                ],  # noqa: E501
+                "params": [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay) and p.requires_grad],  # noqa: E501
                 **opts,
             },
             {
-                "params": [
-                    p
-                    for n, p in model.named_parameters()
-                    if any(nd in n for nd in no_decay) and p.requires_grad
-                ],  # noqa: E501
+                "params": [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay) and p.requires_grad],  # noqa: E501
                 "weight_decay": 0.0,
                 **opts,
             },
         ]
     else:
-        optimizable_parameters = [
-            {"params": [p for p in model.parameters() if p.requires_grad], **opts}
-        ]  # noqa: E501
+        optimizable_parameters = [{"params": [p for p in model.parameters() if p.requires_grad], **opts}]  # noqa: E501
 
     # default weight decay is not the same for all optimizers, so we can't use default value  # noqa: E501
     # only explicitly add weight decay if it's given
@@ -234,14 +219,10 @@ def _get_optim(model, opts):
         optim_constructor = getattr(import_module("torch.optim"), optimizer_name)
     except AttributeError:
         try:
-            optim_constructor = getattr(
-                import_module("transformers.optimization"), optimizer_name
-            )  # noqa: E501
+            optim_constructor = getattr(import_module("transformers.optimization"), optimizer_name)  # noqa: E501
         except AttributeError:
             try:
-                optim_constructor = getattr(
-                    import_module("apex.optimizers"), optimizer_name
-                )  # noqa: E501
+                optim_constructor = getattr(import_module("apex.optimizers"), optimizer_name)  # noqa: E501
             except (AttributeError, ImportError):
                 try:
                     # Workaround to allow loading AdamW from transformers
@@ -265,9 +246,7 @@ def get_scheduler(optimizer, opts):
     """  # noqa: E501
     schedule_name = opts.get("name")
     try:
-        sched_constructor = getattr(
-            import_module("torch.optim.lr_scheduler"), schedule_name
-        )  # noqa: E501
+        sched_constructor = getattr(import_module("torch.optim.lr_scheduler"), schedule_name)  # noqa: E501
     except AttributeError:
         try:
             # The method names in transformers became quite long and unhandy.
@@ -282,9 +261,7 @@ def get_scheduler(optimizer, opts):
             if schedule_name in scheduler_translations:
                 schedule_name = scheduler_translations[schedule_name]
             # in contrast to torch, we actually get here a method and not a class
-            sched_constructor = getattr(
-                import_module("transformers.optimization"), schedule_name
-            )  # noqa: E501
+            sched_constructor = getattr(import_module("transformers.optimization"), schedule_name)  # noqa: E501
         except AttributeError:
             raise AttributeError(  # noqa: B904
                 f"Scheduler '{schedule_name}' not found in 'torch' or 'transformers'"
@@ -296,14 +273,8 @@ def get_scheduler(optimizer, opts):
     allowed_args = inspect.signature(sched_constructor).parameters.keys()
 
     # convert from warmup proportion to steps if required
-    if (
-        "num_warmup_steps" in allowed_args
-        and "num_warmup_steps" not in opts
-        and "warmup_proportion" in opts
-    ):  # noqa: E501
-        opts["num_warmup_steps"] = int(
-            opts["warmup_proportion"] * opts["num_training_steps"]
-        )  # noqa: E501
+    if "num_warmup_steps" in allowed_args and "num_warmup_steps" not in opts and "warmup_proportion" in opts:  # noqa: E501
+        opts["num_warmup_steps"] = int(opts["warmup_proportion"] * opts["num_training_steps"])  # noqa: E501
         MlLogger.log_params({"warmup_proportion": opts["warmup_proportion"]})
 
     # only pass args that are supported by the constructor
@@ -319,9 +290,7 @@ def get_scheduler(optimizer, opts):
     return scheduler
 
 
-def optimize_model(
-    model, device, local_rank, optimizer=None, distributed=False, use_amp=None
-):  # noqa: E501
+def optimize_model(model, device, local_rank, optimizer=None, distributed=False, use_amp=None):  # noqa: E501
     """
     Wraps MultiGPU or distributed usage around a model
     No support for ONNX models
@@ -345,9 +314,7 @@ def optimize_model(
     if distributed:
         if APEX_PARALLEL_AVAILABLE:
             model = convert_syncbn_model(model)
-            logger.info(
-                "Multi-GPU Training via DistributedDataParallel and apex.parallel"
-            )  # noqa: E501
+            logger.info("Multi-GPU Training via DistributedDataParallel and apex.parallel")  # noqa: E501
         else:
             logger.info("Multi-GPU Training via DistributedDataParallel")
 

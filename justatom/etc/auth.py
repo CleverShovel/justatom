@@ -181,9 +181,7 @@ class EnvVarSecret(Secret):
         assert self._type == SecretType.ENV_VAR
 
         if len(self._env_vars) == 0:
-            raise ValueError(
-                "One or more environment variables must be provided for the secret."
-            )  # noqa: E501
+            raise ValueError("One or more environment variables must be provided for the secret.")  # noqa: E501
 
     def _to_dict(self) -> dict[str, Any]:
         return {"env_vars": list(self._env_vars), "strict": self._strict}
@@ -210,9 +208,7 @@ class EnvVarSecret(Secret):
         return self._type
 
 
-def deserialize_secrets_inplace(
-    data: dict[str, Any], keys: Iterable[str], *, recursive: bool = False
-):  # noqa: E501
+def deserialize_secrets_inplace(data: dict[str, Any], keys: Iterable[str], *, recursive: bool = False):  # noqa: E501
     """
     Deserialize secrets in a dictionary inplace.
 
@@ -318,9 +314,7 @@ class AuthApiKey(AuthCredentials):
     By default it will load `api_key` from the environment variable `WEAVIATE_API_KEY`.
     """
 
-    api_key: Secret = field(
-        default_factory=lambda: Secret.from_env_var(["WEAVIATE_API_KEY"])
-    )  # noqa: E501
+    api_key: Secret = field(default_factory=lambda: Secret.from_env_var(["WEAVIATE_API_KEY"]))  # noqa: E501
 
     @classmethod
     def _from_dict(cls, data: dict[str, Any]) -> "AuthApiKey":
@@ -341,21 +335,13 @@ class AuthBearerToken(AuthCredentials):
     `WEAVIATE_REFRESH_TOKEN` environment variable is optional.
     """  # noqa: E501
 
-    access_token: Secret = field(
-        default_factory=lambda: Secret.from_env_var(["WEAVIATE_ACCESS_TOKEN"])
-    )  # noqa: E501
+    access_token: Secret = field(default_factory=lambda: Secret.from_env_var(["WEAVIATE_ACCESS_TOKEN"]))  # noqa: E501
     expires_in: int = field(default=60)
-    refresh_token: Secret = field(
-        default_factory=lambda: Secret.from_env_var(
-            ["WEAVIATE_REFRESH_TOKEN"], strict=False
-        )
-    )  # noqa: E501
+    refresh_token: Secret = field(default_factory=lambda: Secret.from_env_var(["WEAVIATE_REFRESH_TOKEN"], strict=False))  # noqa: E501
 
     @classmethod
     def _from_dict(cls, data: dict[str, Any]) -> "AuthBearerToken":
-        deserialize_secrets_inplace(
-            data["init_parameters"], ["access_token", "refresh_token"]
-        )  # noqa: E501
+        deserialize_secrets_inplace(data["init_parameters"], ["access_token", "refresh_token"])  # noqa: E501
         return cls(**data["init_parameters"])
 
     def resolve_value(self) -> WeaviateAuthBearerToken:
@@ -379,12 +365,8 @@ class AuthClientCredentials(AuthCredentials):
     separated strings. e.g "scope1" or "scope1 scope2".
     """  # noqa: E501
 
-    client_secret: Secret = field(
-        default_factory=lambda: Secret.from_env_var(["WEAVIATE_CLIENT_SECRET"])
-    )  # noqa: E501
-    scope: Secret = field(
-        default_factory=lambda: Secret.from_env_var(["WEAVIATE_SCOPE"], strict=False)
-    )  # noqa: E501
+    client_secret: Secret = field(default_factory=lambda: Secret.from_env_var(["WEAVIATE_CLIENT_SECRET"]))  # noqa: E501
+    scope: Secret = field(default_factory=lambda: Secret.from_env_var(["WEAVIATE_SCOPE"], strict=False))  # noqa: E501
 
     @classmethod
     def _from_dict(cls, data: dict[str, Any]) -> "AuthClientCredentials":
@@ -409,21 +391,13 @@ class AuthClientPassword(AuthCredentials):
     separated strings. e.g "scope1" or "scope1 scope2".
     """  # noqa: E501
 
-    username: Secret = field(
-        default_factory=lambda: Secret.from_env_var(["WEAVIATE_USERNAME"])
-    )  # noqa: E501
-    password: Secret = field(
-        default_factory=lambda: Secret.from_env_var(["WEAVIATE_PASSWORD"])
-    )  # noqa: E501
-    scope: Secret = field(
-        default_factory=lambda: Secret.from_env_var(["WEAVIATE_SCOPE"], strict=False)
-    )  # noqa: E501
+    username: Secret = field(default_factory=lambda: Secret.from_env_var(["WEAVIATE_USERNAME"]))  # noqa: E501
+    password: Secret = field(default_factory=lambda: Secret.from_env_var(["WEAVIATE_PASSWORD"]))  # noqa: E501
+    scope: Secret = field(default_factory=lambda: Secret.from_env_var(["WEAVIATE_SCOPE"], strict=False))  # noqa: E501
 
     @classmethod
     def _from_dict(cls, data: dict[str, Any]) -> "AuthClientPassword":
-        deserialize_secrets_inplace(
-            data["init_parameters"], ["username", "password", "scope"]
-        )  # noqa: E501
+        deserialize_secrets_inplace(data["init_parameters"], ["username", "password", "scope"])  # noqa: E501
         return cls(**data["init_parameters"])
 
     def resolve_value(self) -> WeaviateAuthClientPassword:

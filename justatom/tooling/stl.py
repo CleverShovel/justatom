@@ -115,9 +115,7 @@ def training_params(x: torch.nn.Module):
     return sum(p.numel() for p in x.parameters() if p.requires_grad)
 
 
-def merge_in_order(
-    a: dict | None = None, dv: dict | None = None, do_copy: bool = False
-):  # noqa: E501
+def merge_in_order(a: dict | None = None, dv: dict | None = None, do_copy: bool = False):  # noqa: E501
     """
     This function perfrorm `merge` in a Asymmetric way.
     Standard `a.update(dv)` doesn't change with argument swapping.

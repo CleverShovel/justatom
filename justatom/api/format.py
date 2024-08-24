@@ -37,17 +37,11 @@ class IState:
 
     def observe(self, data: str):
         data = data.strip()
-        if (
-            data.startswith("Человек он благонадежный и обеспеченный")
-            or data.startswith("10")
-            or data.startswith("11")
-        ):
+        if data.startswith("Человек он благонадежный и обеспеченный") or data.startswith("10") or data.startswith("11"):
             print()
         _observable = data.strip().lower()
         if _observable.startswith("title:"):
-            return self.process(
-                data, prefix_to_remove="title:", state_to_move=TITLEState
-            )
+            return self.process(data, prefix_to_remove="title:", state_to_move=TITLEState)
         if _observable.startswith(
             (
                 "extractive:dialogue",
@@ -62,21 +56,13 @@ class IState:
         ):
             return self.process(data, prefix_to_remove="", state_to_move=TYPEState)
         elif _observable.startswith("query:"):
-            return self.process(
-                data, prefix_to_remove="query:", state_to_move=QUERYState
-            )
+            return self.process(data, prefix_to_remove="query:", state_to_move=QUERYState)
         elif _observable.startswith("context:"):
-            return self.process(
-                data, prefix_to_remove="context:", state_to_move=CONTEXTState
-            )
+            return self.process(data, prefix_to_remove="context:", state_to_move=CONTEXTState)
         elif _observable.startswith("answer:"):
-            return self.process(
-                data, prefix_to_remove="answer:", state_to_move=ANSWERState
-            )
+            return self.process(data, prefix_to_remove="answer:", state_to_move=ANSWERState)
         elif _observable.startswith("аnswer:"):
-            return self.process(
-                data, prefix_to_remove="аnswer:", state_to_move=ANSWERState
-            )
+            return self.process(data, prefix_to_remove="аnswer:", state_to_move=ANSWERState)
         elif maybe_number(_observable):  # `maybe_real`
             return self.process(data, prefix_to_remove="", state_to_move=ENUMState)
 
@@ -84,17 +70,11 @@ class IState:
         # To determine the exact
 
         if self.__class__.__name__ in ("QUERYState", "QUERYBufferState"):
-            return self.process(
-                data, prefix_to_remove="", state_to_move=QUERYBufferState
-            )
+            return self.process(data, prefix_to_remove="", state_to_move=QUERYBufferState)
         elif self.__class__.__name__ in ("CONTEXTState", "CONTEXTBufferState"):
-            return self.process(
-                data, prefix_to_remove="", state_to_move=CONTEXTBufferState
-            )
+            return self.process(data, prefix_to_remove="", state_to_move=CONTEXTBufferState)
         elif self.__class__.__name__ in ("ANSWERState", "ANSWERBufferState"):
-            return self.process(
-                data, prefix_to_remove="", state_to_move=ANSWERBufferState
-            )
+            return self.process(data, prefix_to_remove="", state_to_move=ANSWERBufferState)
         raise Exception(
             f"Couldn't react to the following [{data}] input given current state {self.__class__.__name__}"  # noqa: E501
         )
@@ -118,9 +98,7 @@ class IState:
 
     def process(self, x, prefix_to_remove, state_to_move):
         result = x[len(prefix_to_remove) :].strip()
-        logger.info(
-            f"PROCESSING - NEW STATE [{state_to_move.__name__}] - on LINE {result}"
-        )
+        logger.info(f"PROCESSING - NEW STATE [{state_to_move.__name__}] - on LINE {result}")
         return result, state_to_move.__name__
 
 
@@ -165,9 +143,7 @@ class QUERYState(IState):
 
     def __init__(self):
         super().__init__(name=self.__class__.__name__)
-        self.transitions = dict(
-            CONTEXTState=CONTEXTState, QUERYBufferState=QUERYBufferState
-        )
+        self.transitions = dict(CONTEXTState=CONTEXTState, QUERYBufferState=QUERYBufferState)
 
 
 class QUERYBufferState(IState):
@@ -179,9 +155,7 @@ class QUERYBufferState(IState):
 
     def __init__(self):
         super().__init__(name=self.__class__.__name__)
-        self.transitions = dict(
-            CONTEXTState=CONTEXTState, QUERYBufferState=QUERYBufferState
-        )
+        self.transitions = dict(CONTEXTState=CONTEXTState, QUERYBufferState=QUERYBufferState)
 
     @property
     def belongs_to(self):
@@ -200,9 +174,7 @@ class CONTEXTState(IState):
 
     def __init__(self):
         super().__init__(name=self.__class__.__name__)
-        self.transitions = dict(
-            ANSWERState=ANSWERState, CONTEXTBufferState=CONTEXTBufferState
-        )
+        self.transitions = dict(ANSWERState=ANSWERState, CONTEXTBufferState=CONTEXTBufferState)
 
 
 class CONTEXTBufferState(IState):
@@ -214,9 +186,7 @@ class CONTEXTBufferState(IState):
 
     def __init__(self):
         super().__init__(name=self.__class__.__name__)
-        self.transitions = dict(
-            ANSWERState=ANSWERState, CONTEXTBufferState=CONTEXTBufferState
-        )
+        self.transitions = dict(ANSWERState=ANSWERState, CONTEXTBufferState=CONTEXTBufferState)
 
     @property
     def belongs_to(self):
@@ -236,9 +206,7 @@ class ANSWERState(IState):
 
     def __init__(self):
         super().__init__(name=self.__class__.__name__)
-        self.transitions = dict(
-            ENUMState=ENUMState, ANSWERBufferState=ANSWERBufferState
-        )
+        self.transitions = dict(ENUMState=ENUMState, ANSWERBufferState=ANSWERBufferState)
 
 
 class ANSWERBufferState(IState):
@@ -250,9 +218,7 @@ class ANSWERBufferState(IState):
 
     def __init__(self):
         super().__init__(name=self.__class__.__name__)
-        self.transitions = dict(
-            ENUMState=ENUMState, ANSWERBufferState=ANSWERBufferState
-        )
+        self.transitions = dict(ENUMState=ENUMState, ANSWERBufferState=ANSWERBufferState)
 
     @property
     def belongs_to(self) -> str:
@@ -271,17 +237,13 @@ def make_one_full_state_chunk():  # noqa: F811
     pass
 
 
-def check_and_flush(
-    cur_state: IState, arr: list[str], sample: dict, schema_mapping: dict
-):
+def check_and_flush(cur_state: IState, arr: list[str], sample: dict, schema_mapping: dict):
     """
     This is triggered upon next state followed by any of `state_i`: `state_i`.belongs_to == "BUFFER"
     """  # noqa: E501
     if cur_state.derives_as is None:
         return sample
-    assert (
-        len(arr) > 0
-    ), f"The buffer is empty even though you've entered [BUFFER] as [{cur_state}]"
+    assert len(arr) > 0, f"The buffer is empty even though you've entered [BUFFER] as [{cur_state}]"
 
     sch_key = schema_mapping[cur_state.group]
     value = "\n".join(arr)
@@ -311,9 +273,7 @@ def main(one_iterator):
         formatted_data, next_state = cur_state.next(data=chunk)
         if next_state.belongs_to == "BUFFER":
             if len(cur_state_buffer) <= 0:
-                cur_state_buffer.append(
-                    cur_state_sample[state_to_sample[str(cur_state)]]
-                )
+                cur_state_buffer.append(cur_state_sample[state_to_sample[str(cur_state)]])
             cur_state_buffer.append(formatted_data)
 
         if next_state.belongs_to == "QUERYState":
@@ -321,13 +281,8 @@ def main(one_iterator):
             key, data = state_to_sample[str(next_state)], formatted_data
             cur_state_sample[key] = data
             #
-            cur_state_sample = check_and_flush(
-                cur_state, cur_state_buffer, cur_state_sample, state_to_sample
-            )
-        elif (
-            next_state.belongs_to == "CONTEXTState"
-            or next_state.belongs_to == "ANSWERState"
-        ):  # noqa: E501
+            cur_state_sample = check_and_flush(cur_state, cur_state_buffer, cur_state_sample, state_to_sample)
+        elif next_state.belongs_to == "CONTEXTState" or next_state.belongs_to == "ANSWERState":  # noqa: E501
             key, data = state_to_sample[str(next_state)], formatted_data
             cur_state_sample[key] = data
             cur_state_sample = check_and_flush(
@@ -380,9 +335,7 @@ def main(one_iterator):
 def io_wrapper_txt(fp, chunk_size: int = 10_000_000, sep: str = "\n"):
     fp = Path(fp)
     if fp.suffix != ".txt":
-        message = (
-            f"Calling `io_wrapper_txt` on a file ending with [{fp.suffix}] suffix."
-        )
+        message = f"Calling `io_wrapper_txt` on a file ending with [{fp.suffix}] suffix."
         logger.error(message)
         raise ValueError(message)
     with open(fp) as fin:
@@ -393,9 +346,7 @@ def io_wrapper_txt(fp, chunk_size: int = 10_000_000, sep: str = "\n"):
 def io_wrapper_docx(fp, chunk_size: int = 10_000_000, sep: str = "\n"):
     fp = Path(fp)
     if fp.suffix != ".docx":
-        message = (
-            f"Calling `io_wrapper_docx` on a file ending with [{fp.suffix}] suffix."
-        )
+        message = f"Calling `io_wrapper_docx` on a file ending with [{fp.suffix}] suffix."
         logger.error(message)
         raise ValueError(message)
     try:
@@ -455,11 +406,7 @@ def parse(
     pl_wrapper = pl.from_dicts(samples)
     logger.info(f"There are {pl_wrapper.shape[0]} samples")
 
-    out_path = (
-        Path(os.getcwd()) / ".data" / "outputs" / f"{fpath_or_dir.stem}.csv"
-        if out_path is None
-        else Path(out_path)
-    )
+    out_path = Path(os.getcwd()) / ".data" / "outputs" / f"{fpath_or_dir.stem}.csv" if out_path is None else Path(out_path)
 
     if out_path.suffix != ".csv":
         _wrong_suffix = out_path.suffix

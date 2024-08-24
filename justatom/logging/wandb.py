@@ -68,9 +68,7 @@ class WandbLogger(ILogger):
         log_epoch_metrics: bool = Config.log.log_epoch_metrics,
         **kwargs,
     ) -> None:
-        super().__init__(
-            log_batch_metrics=log_batch_metrics, log_epoch_metrics=log_epoch_metrics
-        )  # noqa: E501
+        super().__init__(log_batch_metrics=log_batch_metrics, log_epoch_metrics=log_epoch_metrics)  # noqa: E501
         if self.log_batch_metrics:
             logger.warning(
                 "Wandb does NOT support several x-axes for logging."
@@ -110,9 +108,7 @@ class WandbLogger(ILogger):
                         step=step,
                     )  # noqa: E501
                 else:
-                    self.run.log(
-                        {f"{key.capitalize()}{prefix.capitalize()}": value}, step=step
-                    )  # noqa: E501
+                    self.run.log({f"{key.capitalize()}{prefix.capitalize()}": value}, step=step)  # noqa: E501
             else:
                 if loader_key is not None:
                     self.run.log(
@@ -162,9 +158,7 @@ class WandbLogger(ILogger):
     ) -> None:
         """Logs image to the logger."""
         if scope == "batch" or scope == "loader":
-            log_path = "_".join(
-                [tag, f"epoch-{runner.epoch_step:04d}", f"loader-{runner.loader}"]
-            )  # noqa: E501
+            log_path = "_".join([tag, f"epoch-{runner.epoch_step:04d}", f"loader-{runner.loader}"])  # noqa: E501
         elif scope == "epoch":
             log_path = "_".join([tag, f"epoch-{runner.epoch_step:04d}"])
         elif scope == "experiment" or scope is None:

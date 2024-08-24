@@ -127,20 +127,14 @@ class Fasttext_converter:
 
     def _load_model(self, **kwargs):
         # Model loading
-        farm_lm_config = (
-            Path(self.pretrained_model_name_or_path) / "language_model_config.json"
-        )  # noqa: E501
+        farm_lm_config = Path(self.pretrained_model_name_or_path) / "language_model_config.json"  # noqa: E501
         if os.path.exists(farm_lm_config):
             # from local dir
             config = json.load(open(farm_lm_config))  # noqa: SIM115
-            resolved_model_file = str(
-                Path(self.pretrained_model_name_or_path) / config["embeddings_filename"]
-            )  # noqa: E501
+            resolved_model_file = str(Path(self.pretrained_model_name_or_path) / config["embeddings_filename"])  # noqa: E501
         else:
             # from s3 or cache
-            resolved_model_file = load_from_cache(
-                self.pretrained_model_name_or_path, EMBEDDING_MODEL_MAP, **kwargs
-            )  # noqa: E501
+            resolved_model_file = load_from_cache(self.pretrained_model_name_or_path, EMBEDDING_MODEL_MAP, **kwargs)  # noqa: E501
         if os.path.isfile(resolved_model_file):
             model = self.fasttext.load_model(resolved_model_file)
         else:
@@ -195,9 +189,7 @@ class Fasttext_converter:
 
     def _create_embeddings(self, temp_vocab, model):
         # Embedding creation
-        embeddings = np.zeros(
-            (len(temp_vocab) + len(SPECIAL_TOKENS), model.get_dimension())
-        )  # noqa: E501
+        embeddings = np.zeros((len(temp_vocab) + len(SPECIAL_TOKENS), model.get_dimension()))  # noqa: E501
         for i, w in enumerate(temp_vocab):
             embeddings[i + len(SPECIAL_TOKENS), :] = model.get_word_vector(w)
         mean_embedding = np.mean(embeddings[len(SPECIAL_TOKENS) :, :], axis=0)
@@ -234,26 +226,16 @@ def load_embedding_tokenizer(pretrained_model_name_or_path, **kwargs):
     if pretrained_model_name_or_path in PRETRAINED_INIT_CONFIGURATION:
         BertTokenizer.pretrained_vocab_files_map["vocab_file"].update(
             {
-                pretrained_model_name_or_path: EMBEDDING_VOCAB_FILES_MAP[
-                    "vocab_file"
-                ].get(  # noqa: E501
+                pretrained_model_name_or_path: EMBEDDING_VOCAB_FILES_MAP["vocab_file"].get(  # noqa: E501
                     pretrained_model_name_or_path, None
                 )
             }
         )
         BertTokenizer.max_model_input_sizes.update(
-            {
-                pretrained_model_name_or_path: MAX_MODEL_INPU_SIZES.get(
-                    pretrained_model_name_or_path
-                )
-            }
+            {pretrained_model_name_or_path: MAX_MODEL_INPU_SIZES.get(pretrained_model_name_or_path)}
         )  # noqa: E501
         BertTokenizer.pretrained_init_configuration.update(
-            {
-                pretrained_model_name_or_path: PRETRAINED_INIT_CONFIGURATION.get(
-                    pretrained_model_name_or_path
-                )
-            }
+            {pretrained_model_name_or_path: PRETRAINED_INIT_CONFIGURATION.get(pretrained_model_name_or_path)}
         )  # noqa: E501
     ret = BertTokenizer.from_pretrained(pretrained_model_name_or_path, **kwargs)
     return ret
@@ -261,9 +243,7 @@ def load_embedding_tokenizer(pretrained_model_name_or_path, **kwargs):
 
 def load_model(pretrained_model_name_or_path, **kwargs):
     # loading config
-    resolved_config_file = load_from_cache(
-        pretrained_model_name_or_path, PRETRAINED_CONFIG_ARCHIVE_MAP, **kwargs
-    )  # noqa: E501
+    resolved_config_file = load_from_cache(pretrained_model_name_or_path, PRETRAINED_CONFIG_ARCHIVE_MAP, **kwargs)  # noqa: E501
     temp = open(resolved_config_file, encoding="utf-8").read()  # noqa: SIM115
     config_dict = json.loads(temp)
 
@@ -275,9 +255,7 @@ def load_model(pretrained_model_name_or_path, **kwargs):
     )
 
     # loading model
-    resolved_model_file = load_from_cache(
-        pretrained_model_name_or_path, EMBEDDING_MODEL_MAP, **kwargs
-    )  # noqa: E501
+    resolved_model_file = load_from_cache(pretrained_model_name_or_path, EMBEDDING_MODEL_MAP, **kwargs)  # noqa: E501
 
     return config_dict, resolved_vocab_file, resolved_model_file
 
@@ -298,9 +276,7 @@ def load_embedding_vectors(embedding_file, vocab):
                 try:
                     np_vec = np.fromstring(vec, sep=" ")
                     if embeddings_dimensionality is None:
-                        if (
-                            len(np_vec) < 4
-                        ):  # word2vec includes number of vectors and its dimension as header  # noqa: E501
+                        if len(np_vec) < 4:  # word2vec includes number of vectors and its dimension as header  # noqa: E501
                             logger.info("Skipping header")
                             continue
                         else:
@@ -310,9 +286,7 @@ def load_embedding_vectors(embedding_file, vocab):
                         words_transformed.add(word)
                 except:  # noqa: E722
                     if logger is not None:
-                        logger.debug(
-                            f"Embeddings reader: Could not convert line: {line}"
-                        )  # noqa: E501
+                        logger.debug(f"Embeddings reader: Could not convert line: {line}")  # noqa: E501
             else:
                 repetitions += 1
 
@@ -336,9 +310,7 @@ def load_word2vec_vocab(vocab_filename):
     return vocab
 
 
-def convert_WordEmbeddings(
-    embedding_filename, vocab_filename, output_path, language="English"
-):  # noqa: E501
+def convert_WordEmbeddings(embedding_filename, vocab_filename, output_path, language="English"):  # noqa: E501
     """
     Converts a Wordembedding model in word2vec format to a format that can be used inside FARM
     For compatibility special tokens are added to create embeddings for [CLS], [SEP], [UNK], [PAD] and [MASK]
@@ -359,13 +331,9 @@ def convert_WordEmbeddings(
     vocab = SPECIAL_TOKENS + temp_vocab
 
     # create embeddings
-    temp_embeddings = load_embedding_vectors(
-        embedding_file=embedding_filename, vocab=temp_vocab
-    )  # noqa: E501
+    temp_embeddings = load_embedding_vectors(embedding_file=embedding_filename, vocab=temp_vocab)  # noqa: E501
     mean_embedding = np.mean(temp_embeddings, axis=0)
-    embeddings = np.zeros(
-        (temp_embeddings.shape[0] + len(SPECIAL_TOKENS), temp_embeddings.shape[1])
-    )  # noqa: E501
+    embeddings = np.zeros((temp_embeddings.shape[0] + len(SPECIAL_TOKENS), temp_embeddings.shape[1]))  # noqa: E501
     for i, tok in enumerate(SPECIAL_TOKENS):  # noqa: B007
         embeddings[i, :] = mean_embedding
     embeddings[len(SPECIAL_TOKENS) :, :] = temp_embeddings
@@ -462,12 +430,7 @@ def _is_punctuation(char):
     # Characters such as "^", "$", and "`" are not in the Unicode
     # Punctuation class but we treat them as punctuation anyways, for
     # consistency.
-    if (
-        (cp >= 33 and cp <= 47)
-        or (cp >= 58 and cp <= 64)
-        or (cp >= 91 and cp <= 96)
-        or (cp >= 123 and cp <= 126)
-    ):  # noqa: E501
+    if (cp >= 33 and cp <= 47) or (cp >= 58 and cp <= 64) or (cp >= 91 and cp <= 96) or (cp >= 123 and cp <= 126):  # noqa: E501
         return True
     cat = unicodedata.category(char)
     if cat.startswith("P"):  # noqa: SIM103
@@ -579,9 +542,7 @@ def s3e_pooling(
 
     # Post processing (removal of first principal component)
     if svd_components is not None:
-        embeddings = (
-            embeddings - embeddings.dot(svd_components.transpose()) * svd_components
-        )  # noqa: E501
+        embeddings = embeddings - embeddings.dot(svd_components.transpose()) * svd_components  # noqa: E501
     return embeddings
 
 
@@ -648,9 +609,7 @@ def fit_s3e_on_corpus(
     n_tokens = sum(token_counts.values())
 
     # Trim vocab & embeddings to most frequent tokens (only to improve speed & ram consumption)  # noqa: E501
-    model.language_model.trim_vocab(
-        token_counts, processor, min_threshold=min_token_occurrences
-    )  # noqa: E501
+    model.language_model.trim_vocab(token_counts, processor, min_threshold=min_token_occurrences)  # noqa: E501
 
     # Normalize embeddings
     model.language_model.normalize_embeddings(
@@ -674,9 +633,7 @@ def fit_s3e_on_corpus(
     # Construct Cluster
     weight_list = np.array(list(token_weights.values()))
     logger.info("Creating clusters for S3E embeddings")
-    kmeans = KMeans(n_clusters=n_clusters, random_state=42).fit(
-        normalized_word_embs, sample_weight=weight_list
-    )  # noqa: E501
+    kmeans = KMeans(n_clusters=n_clusters, random_state=42).fit(normalized_word_embs, sample_weight=weight_list)  # noqa: E501
 
     s3e_stats = {
         "token_to_cluster": kmeans.labels_,
@@ -686,9 +643,7 @@ def fit_s3e_on_corpus(
     }
 
     if svd_postprocessing:
-        logger.info(
-            "Post processing sentence embeddings using principal component removal"
-        )  # noqa: E501
+        logger.info("Post processing sentence embeddings using principal component removal")  # noqa: E501
 
         # Input
         sentences = [{"text": s} for s in corpus.split("\n") if len(s.strip()) > 0]

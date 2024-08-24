@@ -85,17 +85,13 @@ class QACandidate:
         self.meta = None
 
     def set_context_window(self, context_window_size, clear_text):
-        window_str, start_ch, end_ch = self._create_context_window(
-            context_window_size, clear_text
-        )  # noqa: E501
+        window_str, start_ch, end_ch = self._create_context_window(context_window_size, clear_text)  # noqa: E501
         self.context_window = window_str
         self.offset_context_window_start = start_ch
         self.offset_context_window_end = end_ch
 
     def set_answer_string(self, token_offsets, document_text):
-        pred_str, self.offset_answer_start, self.offset_answer_end = (
-            self._span_to_string(token_offsets, document_text)
-        )  # noqa: E501
+        pred_str, self.offset_answer_start, self.offset_answer_end = self._span_to_string(token_offsets, document_text)  # noqa: E501
         self.offset_unit = "char"
         self._add_answer(pred_str)
 
@@ -118,8 +114,7 @@ class QACandidate:
                 )  # noqa: E501
             elif self.offset_answer_end <= 0:
                 logger.error(
-                    f"Invalid end offset: \n"
-                    f"({self.offset_answer_start}, {self.offset_answer_end}) with a span answer. "  # noqa: E501
+                    f"Invalid end offset: \n" f"({self.offset_answer_start}, {self.offset_answer_end}) with a span answer. "  # noqa: E501
                 )  # noqa: E501
 
     def _create_context_window(self, context_window_size, clear_text):
@@ -317,7 +312,7 @@ class QAPred(Pred):
 
         # iterate over the top_n predictions of the one document
         for qa_candidate in self.prediction:
-            if squad and qa_candidate.answer == "no_answer":
+            if squad and qa_candidate.answer == "no_answer":  # noqa: SIM108
                 answer_string = ""
             else:
                 answer_string = qa_candidate.answer

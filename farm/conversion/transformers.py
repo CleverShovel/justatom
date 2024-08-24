@@ -55,30 +55,22 @@ class Converter:
                 continue
 
             if prediction_head.model_type in ["text_classification", "regression"]:
-                transformers_model = (
-                    Converter._convert_to_transformers_classification_regression(
-                        adaptive_model,  # noqa: E501
-                        prediction_head,
-                    )
+                transformers_model = Converter._convert_to_transformers_classification_regression(
+                    adaptive_model,  # noqa: E501
+                    prediction_head,
                 )
                 converted_models.append(transformers_model)
 
             elif prediction_head.model_type == "span_classification":
-                transformers_model = Converter._convert_to_transformers_qa(
-                    adaptive_model, prediction_head
-                )  # noqa: E501
+                transformers_model = Converter._convert_to_transformers_qa(adaptive_model, prediction_head)  # noqa: E501
                 converted_models.append(transformers_model)
 
             elif prediction_head.model_type == "language_modelling":
-                transformers_model = Converter._convert_to_transformers_lm(
-                    adaptive_model, prediction_head
-                )  # noqa: E501
+                transformers_model = Converter._convert_to_transformers_lm(adaptive_model, prediction_head)  # noqa: E501
                 converted_models.append(transformers_model)
 
             elif prediction_head.model_type == "token_classification":
-                transformers_model = Converter._convert_to_transformers_ner(
-                    adaptive_model, prediction_head
-                )  # noqa: E501
+                transformers_model = Converter._convert_to_transformers_ner(adaptive_model, prediction_head)  # noqa: E501
                 converted_models.append(transformers_model)
 
             else:
@@ -90,9 +82,7 @@ class Converter:
         return converted_models
 
     @staticmethod
-    def convert_from_transformers(
-        model_name_or_path, device, revision=None, task_type=None, processor=None
-    ):  # noqa: E501
+    def convert_from_transformers(model_name_or_path, device, revision=None, task_type=None, processor=None):  # noqa: E501
         """
         Load a (downstream) model from huggingface's transformers format. Use cases:
          - continue training in FARM (e.g. take a squad QA model and fine-tune on your own data)
@@ -127,7 +117,7 @@ class Converter:
             elif "QuestionAnswering" in architecture:
                 task_type = "question_answering"
             elif "SequenceClassification" in architecture:
-                if lm.model.config.num_labels == 1:
+                if lm.model.config.num_labels == 1:  # noqa: SIM108
                     task_type = "regression"
                 else:
                     task_type = "text_classification"
@@ -218,9 +208,7 @@ class Converter:
         return adaptive_model
 
     @staticmethod
-    def _convert_to_transformers_classification_regression(
-        adaptive_model, prediction_head
-    ):  # noqa: E501
+    def _convert_to_transformers_classification_regression(adaptive_model, prediction_head):  # noqa: E501
         if adaptive_model.language_model.model.base_model_prefix == "roberta":
             # Classification Heads in transformers have different architecture across Language Model variants  # noqa: E501
             # The RobertaClassificationhead has components: input2dense, dropout, tanh, dense2output  # noqa: E501
@@ -232,9 +220,7 @@ class Converter:
             )
 
         # add more info to config
-        adaptive_model.language_model.model.config.num_labels = (
-            prediction_head.num_labels
-        )  # noqa: E501
+        adaptive_model.language_model.model.config.num_labels = prediction_head.num_labels  # noqa: E501
         adaptive_model.language_model.model.config.id2label = {
             id: label
             for id, label in enumerate(prediction_head.label_list)  # noqa: E501
@@ -243,26 +229,18 @@ class Converter:
             label: id
             for id, label in enumerate(prediction_head.label_list)  # noqa: E501
         }
-        adaptive_model.language_model.model.config.finetuning_task = (
-            prediction_head.model_type
-        )  # noqa: E501
-        adaptive_model.language_model.model.config.language = (
-            adaptive_model.language_model.language
-        )  # noqa: E501
+        adaptive_model.language_model.model.config.finetuning_task = prediction_head.model_type  # noqa: E501
+        adaptive_model.language_model.model.config.language = adaptive_model.language_model.language  # noqa: E501
 
         # init model
-        transformers_model = AutoModelForSequenceClassification.from_config(
-            adaptive_model.language_model.model.config
-        )  # noqa: E501
+        transformers_model = AutoModelForSequenceClassification.from_config(adaptive_model.language_model.model.config)  # noqa: E501
         # transfer weights for language model + prediction head
         setattr(
             transformers_model,
             transformers_model.base_model_prefix,
             adaptive_model.language_model.model,
         )  # noqa: E501
-        transformers_model.classifier.load_state_dict(
-            prediction_head.feed_forward.feed_forward[0].state_dict()
-        )
+        transformers_model.classifier.load_state_dict(prediction_head.feed_forward.feed_forward[0].state_dict())
 
         return transformers_model
 
@@ -273,18 +251,14 @@ class Converter:
         # remove pooling layer
         adaptive_model.language_model.model.pooler = None
         # init model
-        transformers_model = AutoModelForQuestionAnswering.from_config(
-            adaptive_model.language_model.model.config
-        )  # noqa: E501
+        transformers_model = AutoModelForQuestionAnswering.from_config(adaptive_model.language_model.model.config)  # noqa: E501
         # transfer weights for language model + prediction head
         setattr(
             transformers_model,
             transformers_model.base_model_prefix,
             adaptive_model.language_model.model,
         )  # noqa: E501
-        transformers_model.qa_outputs.load_state_dict(
-            prediction_head.feed_forward.feed_forward[0].state_dict()
-        )
+        transformers_model.qa_outputs.load_state_dict(prediction_head.feed_forward.feed_forward[0].state_dict())
 
         return transformers_model
 
@@ -293,9 +267,7 @@ class Converter:
         # remove pooling layer
         adaptive_model.language_model.model.pooler = None
         # init model
-        transformers_model = AutoModelWithLMHead.from_config(
-            adaptive_model.language_model.model.config
-        )  # noqa: E501
+        transformers_model = AutoModelWithLMHead.from_config(adaptive_model.language_model.model.config)  # noqa: E501
         # transfer weights for language model + prediction head
         setattr(
             transformers_model,
@@ -308,9 +280,7 @@ class Converter:
         ph_state_dict = prediction_head.state_dict()
         ph_state_dict["transform.dense.weight"] = ph_state_dict.pop("dense.weight")
         ph_state_dict["transform.dense.bias"] = ph_state_dict.pop("dense.bias")
-        ph_state_dict["transform.LayerNorm.weight"] = ph_state_dict.pop(
-            "LayerNorm.weight"
-        )  # noqa: E501
+        ph_state_dict["transform.LayerNorm.weight"] = ph_state_dict.pop("LayerNorm.weight")  # noqa: E501
         ph_state_dict["transform.LayerNorm.bias"] = ph_state_dict.pop("LayerNorm.bias")
         transformers_model.cls.predictions.load_state_dict(ph_state_dict)
 
@@ -321,9 +291,7 @@ class Converter:
         # remove pooling layer
         adaptive_model.language_model.model.pooler = None
         # add more info to config
-        adaptive_model.language_model.model.config.num_labels = (
-            prediction_head.num_labels
-        )  # noqa: E501
+        adaptive_model.language_model.model.config.num_labels = prediction_head.num_labels  # noqa: E501
         adaptive_model.language_model.model.config.id2label = {
             id: label
             for id, label in enumerate(prediction_head.label_list)  # noqa: E501
@@ -332,25 +300,17 @@ class Converter:
             label: id
             for id, label in enumerate(prediction_head.label_list)  # noqa: E501
         }
-        adaptive_model.language_model.model.config.finetuning_task = (
-            "token_classification"  # noqa: E501
-        )
-        adaptive_model.language_model.model.config.language = (
-            adaptive_model.language_model.language
-        )  # noqa: E501
+        adaptive_model.language_model.model.config.finetuning_task = "token_classification"  # noqa: E501
+        adaptive_model.language_model.model.config.language = adaptive_model.language_model.language  # noqa: E501
 
         # init model
-        transformers_model = AutoModelForTokenClassification.from_config(
-            adaptive_model.language_model.model.config
-        )  # noqa: E501
+        transformers_model = AutoModelForTokenClassification.from_config(adaptive_model.language_model.model.config)  # noqa: E501
         # transfer weights for language model + prediction head
         setattr(
             transformers_model,
             transformers_model.base_model_prefix,
             adaptive_model.language_model.model,
         )  # noqa: E501
-        transformers_model.classifier.load_state_dict(
-            prediction_head.feed_forward.feed_forward[0].state_dict()
-        )
+        transformers_model.classifier.load_state_dict(prediction_head.feed_forward.feed_forward[0].state_dict())
 
         return transformers_model

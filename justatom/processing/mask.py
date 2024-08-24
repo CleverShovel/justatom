@@ -69,9 +69,7 @@ class IProcessor(abc.ABC):
         text_column_name=None,
     ):
         if type(label_list) is not list:
-            raise ValueError(
-                f"Argument `label_list` must be of type list. Got: f{type(label_list)}"
-            )  # noqa: E501
+            raise ValueError(f"Argument `label_list` must be of type list. Got: f{type(label_list)}")  # noqa: E501
 
         if label_name is None:
             label_name = f"{name}_label"
@@ -97,9 +95,7 @@ class IProcessor(abc.ABC):
 
         :return: True if all the samples in the basket has computed its features, False otherwise
         """  # noqa: E501
-        return basket.samples and not any(
-            sample.features is None for sample in basket.samples
-        )  # noqa: E501
+        return basket.samples and not any(sample.features is None for sample in basket.samples)  # noqa: E501
 
     def save(self, save_dir: str):
         """
@@ -151,14 +147,10 @@ class IProcessor(abc.ABC):
             logger.info(f"Processor found locally at {where}")
             with open(config_file) as f:
                 config = json.load(f)
-            processor = cls.subclasses[config["klass"]].load(
-                where, config=config, **kwargs
-            )  # noqa: E501
+            processor = cls.subclasses[config["klass"]].load(where, config=config, **kwargs)  # noqa: E501
         else:
             logger.info("Loading default `INFERProcessor` instance")
-            processor = cls.subclasses["INFERProcessor"].load(
-                where, config={}, **kwargs
-            )  # noqa: E501
+            processor = cls.subclasses["INFERProcessor"].load(where, config={}, **kwargs)  # noqa: E501
         return processor
 
     def generate_config(self):

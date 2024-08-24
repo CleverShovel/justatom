@@ -41,9 +41,7 @@ class IMODELRunner:
         :return: An instance of the specified processor.
         """
         config_file = Path(data_dir) / "runner_config.json"
-        assert (
-            config_file.exists()
-        ), "The config is not found, couldn't load the processor"  # noqa: E501
+        assert config_file.exists(), "The config is not found, couldn't load the processor"  # noqa: E501
         logger.info(f"Runner config found locally at {data_dir}")
         with open(config_file) as f:
             config = json.load(f)
@@ -90,9 +88,7 @@ class IMODELRunner:
             head.label_tensor_name = tasks[head.task_name]["label_tensor_name"]
             label_list = tasks[head.task_name]["label_list"]
             if not label_list and require_labels:
-                raise Exception(
-                    f"The task '{head.task_name}' is missing a valid set of labels"
-                )  # noqa: E501
+                raise Exception(f"The task '{head.task_name}' is missing a valid set of labels")  # noqa: E501
             label_list = tasks[head.task_name]["label_list"]
             head.label_list = label_list
             head.metric = tasks[head.task_name]["metric"]

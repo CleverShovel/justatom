@@ -86,9 +86,7 @@ def default_from_dict(cls: type[object], data: dict[str, Any]) -> Any:
     if "type" not in data:
         raise DeserializationError("Missing 'type' in serialization data")
     if data["type"] != generate_qualified_class_name(cls):
-        raise DeserializationError(
-            f"Class '{data['type']}' can't be deserialized as '{cls.__name__}'"
-        )  # noqa: E501
+        raise DeserializationError(f"Class '{data['type']}' can't be deserialized as '{cls.__name__}'")  # noqa: E501
     return cls(**init_params)
 
 

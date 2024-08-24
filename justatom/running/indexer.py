@@ -42,19 +42,11 @@ class NNIndexer(IIndexerRunner):
         batch_size: int = 1,
         device: str = "cpu",
     ):
-        documents_as_dicts = [
-            d.to_dict() if isinstance(d, Document) else d for d in documents
-        ]
-        dataset, tensor_names = igniset(
-            dicts=documents_as_dicts, processor=self.processor, batch_size=batch_size
-        )
-        loader = NamedDataLoader(
-            dataset=dataset, tensor_names=tensor_names, batch_size=batch_size
-        )
+        documents_as_dicts = [d.to_dict() if isinstance(d, Document) else d for d in documents]
+        dataset, tensor_names = igniset(dicts=documents_as_dicts, processor=self.processor, batch_size=batch_size)
+        loader = NamedDataLoader(dataset=dataset, tensor_names=tensor_names, batch_size=batch_size)
         for i, (docs, batch) in tqdm(  # noqa: B007
-            enumerate(
-                zip(chunked(documents_as_dicts, n=batch_size), loader, strict=False)
-            )  # noqa: E501
+            enumerate(zip(chunked(documents_as_dicts, n=batch_size), loader, strict=False))  # noqa: E501
         ):
             batches = {k: v.to(self.device) for k, v in batch.items()}
             vectors = self.runner(batch=batches)[0].cpu()
@@ -74,14 +66,7 @@ class KWARGIndexer(IIndexerRunner):
                 chunked(documents, n=batch_size),
             )
         ):
-            docs = [
-                (
-                    Document.from_dict(dict(content=ci))
-                    if isinstance(ci, str)
-                    else Document.from_dict(ci)
-                )
-                for ci in chunk
-            ]
+            docs = [(Document.from_dict(dict(content=ci)) if isinstance(ci, str) else Document.from_dict(ci)) for ci in chunk]
             self.store.write_documents(docs)
             logger.info(f"{self.__class__.__name__} - index - {i / len(documents)}")
 

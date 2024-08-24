@@ -34,7 +34,7 @@ class NamedDataLoader(DataLoader):
             A custom collate function that formats the batch as a dictionary where the key is
             the name of the tensor and the value is the tensor itself
             """  # noqa: E501
-            if type(dataset).__name__ == "_StreamingDataSet":
+            if type(dataset).__name__ == "_StreamingDataSet":  # noqa: SIM108
                 _tensor_names = dataset.tensor_names
             else:
                 _tensor_names = tensor_names
@@ -48,9 +48,7 @@ class NamedDataLoader(DataLoader):
                     f" supplied: {_tensor_names}"
                 )
 
-            max_num_labels = self._compute_max_number_of_labels(
-                batch=batch, tensor_names=_tensor_names
-            )  # noqa: E501
+            max_num_labels = self._compute_max_number_of_labels(batch=batch, tensor_names=_tensor_names)  # noqa: E501
 
             ret = {name: [] for name in tensor_names}
             for example in batch:

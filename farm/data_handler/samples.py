@@ -53,9 +53,7 @@ class Sample:
 
     def __str__(self):
         if self.clear_text:
-            clear_text_str = "\n \t".join(
-                [k + ": " + str(v) for k, v in self.clear_text.items()]
-            )
+            clear_text_str = "\n \t".join([k + ": " + str(v) for k, v in self.clear_text.items()])
             if len(clear_text_str) > 10000:
                 clear_text_str = (
                     clear_text_str[:10_000] + f"\nTHE REST IS TOO LONG TO DISPLAY. "
@@ -65,7 +63,7 @@ class Sample:
             clear_text_str = "None"
 
         if self.features:
-            if isinstance(self.features, list):
+            if isinstance(self.features, list):  # noqa: SIM108
                 features = self.features[0]
             else:
                 features = self.features
@@ -74,13 +72,10 @@ class Sample:
             feature_str = "None"
 
         if self.tokenized:
-            tokenized_str = "\n \t".join(
-                [k + ": " + str(v) for k, v in self.tokenized.items()]
-            )
+            tokenized_str = "\n \t".join([k + ": " + str(v) for k, v in self.tokenized.items()])
             if len(tokenized_str) > 10000:
                 tokenized_str = (
-                    tokenized_str[:10_000] + f"\nTHE REST IS TOO LONG TO DISPLAY. "
-                    f"Remaining chars: {len(tokenized_str)-10_000}"
+                    tokenized_str[:10_000] + f"\nTHE REST IS TOO LONG TO DISPLAY. " f"Remaining chars: {len(tokenized_str)-10_000}"
                 )  # noqa: E501
         else:
             tokenized_str = "None"
@@ -118,7 +113,7 @@ def process_answers(answers, doc_offsets, passage_start_c, passage_start_t):
         # This section calculates start and end relative to document
         answer_text = answer["text"]
         answer_len_c = len(answer_text)
-        if "offset" in answer:
+        if "offset" in answer:  # noqa: SIM108
             answer_start_c = answer["offset"]
         else:
             answer_start_c = answer["answer_start"]
@@ -216,7 +211,7 @@ def offset_to_token_idx_vecorized(token_offsets, ch_idx):
     ################
     ##################
     # case ch_idx is at end of tokens
-    if ch_idx >= np.max(token_offsets):
+    if ch_idx >= np.max(token_offsets):  # noqa: SIM108
         # TODO check "+ 1" (it is needed for making end indices compliant with old offset_to_token_idx() function)  # noqa: E501
         # check weather end token is incluse or exclusive
         idx = np.argmax(token_offsets) + 1

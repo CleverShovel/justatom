@@ -130,9 +130,7 @@ class DataSilo:
         """  # noqa: E501
         dicts = [d[1] for d in chunk]
         indices = [x[0] for x in chunk]
-        dataset, tensor_names, problematic_sample_ids = processor.dataset_from_dicts(
-            dicts=dicts, indices=indices
-        )  # noqa: E501
+        dataset, tensor_names, problematic_sample_ids = processor.dataset_from_dicts(dicts=dicts, indices=indices)  # noqa: E501
         return dataset, tensor_names, problematic_sample_ids
 
     def _get_dataset(self, filename, dicts=None):
@@ -156,9 +154,7 @@ class DataSilo:
         )
 
         with ExitStack() as stack:
-            if (
-                self.max_processes > 1
-            ):  # use multiprocessing only when max_processes > 1  # noqa: E501
+            if self.max_processes > 1:  # use multiprocessing only when max_processes > 1  # noqa: E501
                 p = stack.enter_context(mp.Pool(processes=num_cpus_used))
 
                 logger.info(
@@ -221,9 +217,7 @@ class DataSilo:
         if train_dicts:
             # either from supplied dicts
             logger.info("Loading train set from supplied dicts ")
-            self.data["train"], self.tensor_names = self._get_dataset(
-                filename=None, dicts=train_dicts
-            )  # noqa: E501
+            self.data["train"], self.tensor_names = self._get_dataset(filename=None, dicts=train_dicts)  # noqa: E501
         elif self.processor.train_filename:
             # or from a file (default)
             train_file = self.processor.data_dir / self.processor.train_filename
@@ -240,9 +234,7 @@ class DataSilo:
         if dev_dicts:
             # either from supplied dicts
             logger.info("Loading train set from supplied dicts ")
-            self.data["dev"], self.tensor_names = self._get_dataset(
-                filename=None, dicts=dev_dicts
-            )  # noqa: E501
+            self.data["dev"], self.tensor_names = self._get_dataset(filename=None, dicts=dev_dicts)  # noqa: E501
         elif self.processor.dev_filename:
             # or from file (default)
             dev_file = self.processor.data_dir / self.processor.dev_filename
@@ -263,9 +255,7 @@ class DataSilo:
         if test_dicts:
             # either from supplied dicts
             logger.info("Loading train set from supplied dicts ")
-            self.data["test"], self.tensor_names = self._get_dataset(
-                filename=None, dicts=test_dicts
-            )  # noqa: E501
+            self.data["test"], self.tensor_names = self._get_dataset(filename=None, dicts=test_dicts)  # noqa: E501
         elif self.processor.test_filename:
             # or from file (default)
             test_file = self.processor.data_dir / self.processor.test_filename
@@ -353,7 +343,7 @@ class DataSilo:
         """Initializing train, dev and test data loaders for the already loaded datasets"""  # noqa: E501
 
         if self.data["train"] is not None:
-            if self.distributed:
+            if self.distributed:  # noqa: SIM108
                 sampler_train = DistributedSampler(self.data["train"])
             else:
                 sampler_train = RandomSampler(self.data["train"])
@@ -398,9 +388,7 @@ class DataSilo:
         n_dev = int(self.processor.dev_split * len(self.data["train"]))
         n_train = len(self.data["train"]) - n_dev
 
-        train_dataset, dev_dataset = self.random_split_ConcatDataset(
-            self.data["train"], lengths=[n_train, n_dev]
-        )  # noqa: E501
+        train_dataset, dev_dataset = self.random_split_ConcatDataset(self.data["train"], lengths=[n_train, n_dev])  # noqa: E501
         self.data["train"] = train_dataset
         if len(dev_dataset) > 0:
             self.data["dev"] = dev_dataset
@@ -422,9 +410,7 @@ class DataSilo:
         :type lengths: list
         """  # noqa: E501
         if sum(lengths) != len(ds):
-            raise ValueError(
-                "Sum of input lengths does not equal the length of the input dataset!"
-            )  # noqa: E501
+            raise ValueError("Sum of input lengths does not equal the length of the input dataset!")  # noqa: E501
 
         try:
             idx_dataset = np.where(np.array(ds.cumulative_sizes) > lengths[0])[0][0]
@@ -437,8 +423,7 @@ class DataSilo:
             )
 
         assert idx_dataset >= 1, (
-            "Dev_split ratio is too large, there is no data in train set. "
-            f"Please lower dev_split = {self.processor.dev_split}"
+            "Dev_split ratio is too large, there is no data in train set. " f"Please lower dev_split = {self.processor.dev_split}"
         )  # noqa: E501
 
         train = ConcatDataset(ds.datasets[:idx_dataset])
@@ -458,16 +443,9 @@ class DataSilo:
         if self.data["train"]:
             self.counts["train"] = len(self.data["train"])
             if "input_ids" in self.tensor_names:
-                clipped, ave_len, seq_lens, max_seq_len = (
-                    self._calc_length_stats_single_encoder()
-                )  # noqa: E501
-            elif (
-                "query_input_ids" in self.tensor_names
-                and "passage_input_ids" in self.tensor_names
-            ):  # noqa: E501
-                clipped, ave_len, seq_lens, max_seq_len = (
-                    self._calc_length_stats_biencoder()
-                )  # noqa: E501
+                clipped, ave_len, seq_lens, max_seq_len = self._calc_length_stats_single_encoder()  # noqa: E501
+            elif "query_input_ids" in self.tensor_names and "passage_input_ids" in self.tensor_names:  # noqa: E501
+                clipped, ave_len, seq_lens, max_seq_len = self._calc_length_stats_biencoder()  # noqa: E501
             else:
                 logger.warning(
                     "Could not compute length statistics because 'input_ids' or 'query_input_ids' and 'passage_input_ids' are missing."  # noqa: E501
@@ -505,29 +483,18 @@ class DataSilo:
                         "This will lead to higher memory consumption but is likely to "  # noqa: E501
                         "improve your model performance"
                     )
-            elif (
-                "query_input_ids" in self.tensor_names
-                and "passage_input_ids" in self.tensor_names
-            ):  # noqa: E501
+            elif "query_input_ids" in self.tensor_names and "passage_input_ids" in self.tensor_names:  # noqa: E501
                 logger.info(
                     f"Longest query length observed after clipping: {max(seq_lens[0])}   - for max_query_len: {max_seq_len[0]}"  # noqa: E501
                 )  # noqa: E501
-                logger.info(
-                    f"Average query length after clipping:          {ave_len[0]}"
-                )  # noqa: E501
-                logger.info(
-                    f"Proportion queries clipped:                   {clipped[0]}"
-                )  # noqa: E501
+                logger.info(f"Average query length after clipping:          {ave_len[0]}")  # noqa: E501
+                logger.info(f"Proportion queries clipped:                   {clipped[0]}")  # noqa: E501
                 logger.info("")
                 logger.info(
                     f"Longest passage length observed after clipping: {max(seq_lens[1])}   - for max_passage_len: {max_seq_len[1]}"  # noqa: E501
                 )  # noqa: E501
-                logger.info(
-                    f"Average passage length after clipping:          {ave_len[1]}"
-                )  # noqa: E501
-                logger.info(
-                    f"Proportion passages clipped:                    {clipped[1]}"
-                )  # noqa: E501
+                logger.info(f"Average passage length after clipping:          {ave_len[1]}")  # noqa: E501
+                logger.info(f"Proportion passages clipped:                    {clipped[1]}")  # noqa: E501
 
         MlLogger.log_params(
             {
@@ -544,11 +511,7 @@ class DataSilo:
         seq_lens = []
         for dataset in self.data["train"].datasets:
             train_input_numpy = dataset[:][self.tensor_names.index("input_ids")].numpy()
-            seq_lens.extend(
-                np.sum(
-                    train_input_numpy != self.processor.tokenizer.pad_token_id, axis=1
-                )
-            )  # noqa: E501
+            seq_lens.extend(np.sum(train_input_numpy != self.processor.tokenizer.pad_token_id, axis=1))  # noqa: E501
         max_seq_len = dataset[:][self.tensor_names.index("input_ids")].shape[1]
         clipped = np.mean(np.array(seq_lens) == max_seq_len) if seq_lens else 0
         ave_len = np.mean(seq_lens) if seq_lens else 0
@@ -557,25 +520,14 @@ class DataSilo:
     def _calc_length_stats_biencoder(self):
         seq_lens = [[], []]
         for dataset in self.data["train"].datasets:
-            query_input_numpy = dataset[:][
-                self.tensor_names.index("query_input_ids")
-            ].numpy()  # noqa: E501
-            num_passages = dataset[:][
-                self.tensor_names.index("passage_input_ids")
-            ].shape[1]  # noqa: E501
+            query_input_numpy = dataset[:][self.tensor_names.index("query_input_ids")].numpy()  # noqa: E501
+            num_passages = dataset[:][self.tensor_names.index("passage_input_ids")].shape[1]  # noqa: E501
             bs = dataset[:][self.tensor_names.index("passage_input_ids")].shape[0]
-            passage_input_numpy = (
-                dataset[:][self.tensor_names.index("passage_input_ids")]
-                .numpy()
-                .reshape((bs, -1), order="C")
-            )  # noqa: E501
-            qlen = np.sum(
-                query_input_numpy != self.processor.query_tokenizer.pad_token_id, axis=1
-            )  # noqa: E501
+            passage_input_numpy = dataset[:][self.tensor_names.index("passage_input_ids")].numpy().reshape((bs, -1), order="C")  # noqa: E501
+            qlen = np.sum(query_input_numpy != self.processor.query_tokenizer.pad_token_id, axis=1)  # noqa: E501
             plen = (
                 np.sum(
-                    passage_input_numpy
-                    != self.processor.passage_tokenizer.pad_token_id,
+                    passage_input_numpy != self.processor.passage_tokenizer.pad_token_id,
                     axis=1,
                 )
                 / num_passages
@@ -583,16 +535,10 @@ class DataSilo:
             seq_lens[0].extend(qlen)
             seq_lens[1].extend(plen)
         q_max_seq_len = dataset[:][self.tensor_names.index("query_input_ids")].shape[1]
-        p_max_seq_len = dataset[:][self.tensor_names.index("passage_input_ids")].shape[
-            2
-        ]  # noqa: E501
-        clipped_q = (
-            np.mean(np.array(seq_lens[0]) == q_max_seq_len) if seq_lens[0] else 0
-        )  # noqa: E501
+        p_max_seq_len = dataset[:][self.tensor_names.index("passage_input_ids")].shape[2]  # noqa: E501
+        clipped_q = np.mean(np.array(seq_lens[0]) == q_max_seq_len) if seq_lens[0] else 0  # noqa: E501
         ave_len_q = np.mean(seq_lens[0]) if seq_lens[0] else 0
-        clipped_p = (
-            np.mean(np.array(seq_lens[1]) == p_max_seq_len) if seq_lens[1] else 0
-        )  # noqa: E501
+        clipped_p = np.mean(np.array(seq_lens[1]) == p_max_seq_len) if seq_lens[1] else 0  # noqa: E501
         ave_len_p = np.mean(seq_lens[1]) if seq_lens[1] else 0
         clipped = [clipped_q, clipped_p]
         ave_len = [ave_len_q, ave_len_p]
@@ -621,17 +567,12 @@ class DataSilo:
         for dataset in datasets:
             if "multilabel" in self.processor.tasks[task_name]["task_type"]:
                 for x in dataset:
-                    observed_labels += [
-                        label_list[label_id]
-                        for label_id in (x[tensor_idx] == 1).nonzero()
-                    ]  # noqa: E501
+                    observed_labels += [label_list[label_id] for label_id in (x[tensor_idx] == 1).nonzero()]  # noqa: E501
             else:
                 observed_labels += [label_list[x[tensor_idx].item()] for x in dataset]
 
         # TODO scale e.g. via logarithm to avoid crazy spikes for rare classes
-        class_weights = compute_class_weight(
-            "balanced", classes=np.asarray(label_list), y=observed_labels
-        )  # noqa: E501
+        class_weights = compute_class_weight("balanced", classes=np.asarray(label_list), y=observed_labels)  # noqa: E501
 
         # conversion necessary to have class weights of same type as model weights
         class_weights = class_weights.astype(np.float32)
@@ -724,7 +665,7 @@ class StreamingDataSilo:
         #  Since the batching is now handled within _StreamingDataSet, we disable the batching on DataLoader side  # noqa: E501
         #  by initializing the data loader with batch_size as 1.
 
-        if isinstance(filename, Path) and filename.is_dir():
+        if isinstance(filename, Path) and filename.is_dir():  # noqa: SIM108
             filepath = filename
         else:
             filepath = self.processor.data_dir / filename
@@ -774,7 +715,7 @@ class _StreamingDataSet(IterableDataset):
         self.distributed = distributed
 
         # calculate or estimate number of samples so that the data loader can derive number of training steps  # noqa: E501
-        if filepath.is_file():
+        if filepath.is_file():  # noqa: SIM108
             files = [filepath]
         else:
             files = [file for file in filepath.iterdir()]
@@ -783,9 +724,7 @@ class _StreamingDataSet(IterableDataset):
             self.n_samples = n_samples
         else:
             try:
-                self.n_samples = self.processor.estimate_n_samples(files[0]) * len(
-                    files
-                )  # noqa: E501
+                self.n_samples = self.processor.estimate_n_samples(files[0]) * len(files)  # noqa: E501
             except AttributeError:
                 AttributeError(
                     f"Could not estimate n_samples for {self.processor.__class__.__name__} in StreamingDataSilo. "  # noqa: E501
@@ -862,14 +801,10 @@ class _StreamingDataSet(IterableDataset):
         dicts = [d[1] for d in chunk]
         # need at least 2 documents to sample random sentences from
         if len(dicts) < 2 and type(self.processor) == BertStyleLMProcessor:  # noqa: E721
-            logger.info(
-                "Skipping a dict chunk as it contains less than 2 documents ..."
-            )  # noqa: E501
+            logger.info("Skipping a dict chunk as it contains less than 2 documents ...")  # noqa: E501
             return None, None
         indices = [x[0] for x in chunk]
-        datasets, tensor_names, _ = self.processor.dataset_from_dicts(
-            dicts=dicts, indices=indices
-        )  # noqa: E501
+        datasets, tensor_names, _ = self.processor.dataset_from_dicts(dicts=dicts, indices=indices)  # noqa: E501
         return datasets, tensor_names
 
     def shuffle_files(self, files, seed=None):
@@ -982,15 +917,10 @@ class DataSiloForCrossVal:
                 random_state,
                 n_neg_answers_per_question,  # noqa: E501
             )
-        elif (
-            "question_answering" in datasilo.processor.tasks
-            and n_inner_splits is not None
-        ):  # noqa: E501
+        elif "question_answering" in datasilo.processor.tasks and n_inner_splits is not None:  # noqa: E501
             raise NotImplementedError()
         elif n_inner_splits is None:
-            return cls._make(
-                datasilo, sets, n_splits, shuffle, random_state, stratified
-            )
+            return cls._make(datasilo, sets, n_splits, shuffle, random_state, stratified)
         elif n_inner_splits is not None:
             return cls._make_nested(
                 datasilo,
@@ -1002,9 +932,7 @@ class DataSiloForCrossVal:
                 n_inner_splits,
             )
         else:
-            raise RuntimeError(
-                "Cross validation can not be done under these conditions!"
-            )  # noqa: E501
+            raise RuntimeError("Cross validation can not be done under these conditions!")  # noqa: E501
 
     @classmethod
     def _make_question_answering(
@@ -1034,12 +962,8 @@ class DataSiloForCrossVal:
         :param n_neg_answers_per_question: number of negative answers per question to include for training
         :type n_neg_answers_per_question: int
         """  # noqa: E501
-        assert (
-            "id" in datasilo.tensor_names
-        ), f"Expected tensor 'id' in tensor names, found {datasilo.tensor_names}"  # noqa: E501
-        assert (
-            "labels" in datasilo.tensor_names
-        ), f"Expected tensor 'labels' in tensor names, found {datasilo.tensor_names}"  # noqa: E501
+        assert "id" in datasilo.tensor_names, f"Expected tensor 'id' in tensor names, found {datasilo.tensor_names}"  # noqa: E501
+        assert "labels" in datasilo.tensor_names, f"Expected tensor 'labels' in tensor names, found {datasilo.tensor_names}"  # noqa: E501
 
         id_index = datasilo.tensor_names.index("id")
         label_index = datasilo.tensor_names.index("labels")
@@ -1070,9 +994,7 @@ class DataSiloForCrossVal:
             if datasilo.processor.dev_split > 0:
                 dev_split = datasilo.processor.dev_split
                 n_dev = int(np.ceil(dev_split * len(train_set)))
-                assert (
-                    n_dev > 0
-                ), f"dev split of {dev_split} is not large enough to split away a development set"  # noqa: E501
+                assert n_dev > 0, f"dev split of {dev_split} is not large enough to split away a development set"  # noqa: E501
                 n_actual_train = len(train_set) - n_dev
                 actual_train_set = train_set[:n_actual_train]
                 dev_set = train_set[n_actual_train:]
@@ -1096,16 +1018,10 @@ class DataSiloForCrossVal:
                             neg_answer_idx.append(index)
                     # add random n_neg_answers_per_question samples to train set
                     if len(neg_answer_idx) <= n_neg_answers_per_question:
-                        train_samples.extend(
-                            [sample_list[idx] for idx in neg_answer_idx]
-                        )  # noqa: E501
+                        train_samples.extend([sample_list[idx] for idx in neg_answer_idx])  # noqa: E501
                     else:
-                        neg_answer_idx = random.sample(
-                            neg_answer_idx, n_neg_answers_per_question
-                        )  # noqa: E501
-                        train_samples.extend(
-                            [sample_list[idx] for idx in neg_answer_idx]
-                        )  # noqa: E501
+                        neg_answer_idx = random.sample(neg_answer_idx, n_neg_answers_per_question)  # noqa: E501
+                        train_samples.extend([sample_list[idx] for idx in neg_answer_idx])  # noqa: E501
 
             ds_train = train_samples
             ds_test = [sample for document in test_set for sample in document]
@@ -1140,9 +1056,7 @@ class DataSiloForCrossVal:
             # get all the labels for stratification
             ytensors = [t[3][0] for t in ds_all]
             Y = torch.stack(ytensors)
-            xval = StratifiedKFold(
-                n_splits=n_splits, shuffle=shuffle, random_state=random_state
-            )  # noqa: E501
+            xval = StratifiedKFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state)  # noqa: E501
             xval_split = xval.split(idxs, Y)
         else:
             xval = KFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state)
@@ -1182,14 +1096,10 @@ class DataSiloForCrossVal:
         questions_per_doc = np.array(questions_per_doc)
         accumulated_questions_per_doc = questions_per_doc.cumsum()
         questions_per_fold = accumulated_questions_per_doc[-1] // n_splits
-        accumulated_questions_per_fold = (
-            np.array(range(1, n_splits)) * questions_per_fold
-        )  # noqa: E501
+        accumulated_questions_per_fold = np.array(range(1, n_splits)) * questions_per_fold  # noqa: E501
         if accumulated_questions_per_fold[0] < accumulated_questions_per_doc[0]:
             accumulated_questions_per_fold[0] = accumulated_questions_per_doc[0] + 1
-        indices_to_split_at = np.searchsorted(
-            accumulated_questions_per_doc, accumulated_questions_per_fold, side="right"
-        )  # noqa: E501
+        indices_to_split_at = np.searchsorted(accumulated_questions_per_doc, accumulated_questions_per_fold, side="right")  # noqa: E501
         splits = np.split(documents, indices_to_split_at)
 
         for split in splits:
@@ -1222,27 +1132,19 @@ class DataSiloForCrossVal:
             # get all the labels for stratification
             ytensors = [t[3][0] for t in ds_all]
             y = torch.stack(ytensors)
-            outer_cv = StratifiedKFold(
-                n_splits=n_splits, shuffle=shuffle, random_state=random_state
-            )  # noqa: E501
+            outer_cv = StratifiedKFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state)  # noqa: E501
             outer_split = outer_cv.split(idxs, y)
         else:
-            outer_cv = KFold(
-                n_splits=n_splits, shuffle=shuffle, random_state=random_state
-            )  # noqa: E501
+            outer_cv = KFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state)  # noqa: E501
             outer_split = outer_cv.split(idxs)
         for idxs_rest, idxs_test in outer_split:
             # inner cross validation where we split rest data into train and dev
             if stratified:
                 y_rest = y[idxs_rest]
-                inner_cv = StratifiedKFold(
-                    n_splits=n_inner_splits, shuffle=shuffle, random_state=random_state
-                )  # noqa: E501
+                inner_cv = StratifiedKFold(n_splits=n_inner_splits, shuffle=shuffle, random_state=random_state)  # noqa: E501
                 inner_split = inner_cv.split(idxs_rest, y_rest)
             else:
-                inner_cv = KFold(
-                    n_splits=n_inner_splits, shuffle=shuffle, random_state=random_state
-                )  # noqa: E501
+                inner_cv = KFold(n_splits=n_inner_splits, shuffle=shuffle, random_state=random_state)  # noqa: E501
                 inner_split = inner_cv.split(idxs_rest)
             for idxs_train_idxs, idxs_dev_idxs in inner_split:
                 # split idxs_rest with indexes from inner cross validation

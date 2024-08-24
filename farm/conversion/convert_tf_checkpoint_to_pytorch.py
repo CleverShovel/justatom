@@ -23,9 +23,7 @@ from transformers.modeling_bert import (
 )
 
 
-def convert_tf_checkpoint_to_pytorch(
-    tf_checkpoint_path, bert_config_file, pytorch_dump_path
-):
+def convert_tf_checkpoint_to_pytorch(tf_checkpoint_path, bert_config_file, pytorch_dump_path):
     # Initialise PyTorch model
     config = BertConfig.from_json_file(bert_config_file)
     print(f"Building PyTorch model from configuration: {str(config)}")
@@ -54,8 +52,7 @@ if __name__ == "__main__":
         default=None,
         type=str,
         required=True,
-        help="The config json file corresponding to the pre-trained BERT model. \n"
-        "This specifies the model architecture.",
+        help="The config json file corresponding to the pre-trained BERT model. \n" "This specifies the model architecture.",
     )
     parser.add_argument(
         "--pytorch_dump_path",
@@ -65,6 +62,4 @@ if __name__ == "__main__":
         help="Path to the output PyTorch model.",
     )
     args = parser.parse_args()
-    convert_tf_checkpoint_to_pytorch(
-        args.tf_checkpoint_path, args.bert_config_file, args.pytorch_dump_path
-    )
+    convert_tf_checkpoint_to_pytorch(args.tf_checkpoint_path, args.bert_config_file, args.pytorch_dump_path)

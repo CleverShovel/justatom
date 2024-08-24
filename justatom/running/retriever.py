@@ -54,29 +54,14 @@ class HybridRetriever(IRetrieverRunner):
         batch_size: int = 16,
     ):
         queries = [queries] if isinstance(queries, str) else queries
-        queries = [
-            (
-                {"content": q}
-                if prefix is None
-                else {"content": q, "meta": {"prefix": prefix}}
-            )
-            for q in queries
-        ]
-        dataset, tensor_names = igniset(
-            queries, processor=self.processor, batch_size=batch_size
-        )
-        loader = NamedDataLoader(
-            dataset, tensor_names=tensor_names, batch_size=batch_size
-        )
+        queries = [({"content": q} if prefix is None else {"content": q, "meta": {"prefix": prefix}}) for q in queries]
+        dataset, tensor_names = igniset(queries, processor=self.processor, batch_size=batch_size)
+        loader = NamedDataLoader(dataset, tensor_names=tensor_names, batch_size=batch_size)
         answer = []
 
-        for _queries, _batches in zip(
-            chunked(queries, n=batch_size), loader, strict=False
-        ):  # noqa: E501
+        for _queries, _batches in zip(chunked(queries, n=batch_size), loader, strict=False):  # noqa: E501
             batches = {k: v.to(self.device) for k, v in _batches.items()}
-            vectors = (
-                self.runner(batch=batches)[0].cpu().numpy().tolist()
-            )  # batch_size x vector_dim
+            vectors = self.runner(batch=batches)[0].cpu().numpy().tolist()  # batch_size x vector_dim
             for vector, query in zip(vectors, _queries, strict=False):  # noqa: B007
                 res_topk = self.store.search(vector, alpha=alpha, top_k=top_k)
                 answer.append(res_topk)
@@ -115,29 +100,14 @@ class EmbeddingRetriever(IRetrieverRunner):
         batch_size: int = 16,
     ):
         queries = [queries] if isinstance(queries, str) else queries
-        queries = [
-            (
-                {"content": q}
-                if prefix is None
-                else {"content": q, "meta": {"prefix": prefix}}
-            )
-            for q in queries
-        ]
-        dataset, tensor_names = igniset(
-            queries, processor=self.processor, batch_size=batch_size
-        )
-        loader = NamedDataLoader(
-            dataset, tensor_names=tensor_names, batch_size=batch_size
-        )
+        queries = [({"content": q} if prefix is None else {"content": q, "meta": {"prefix": prefix}}) for q in queries]
+        dataset, tensor_names = igniset(queries, processor=self.processor, batch_size=batch_size)
+        loader = NamedDataLoader(dataset, tensor_names=tensor_names, batch_size=batch_size)
         answer = []
 
-        for _queries, _batches in zip(
-            chunked(queries, n=batch_size), loader, strict=False
-        ):  # noqa: E501
+        for _queries, _batches in zip(chunked(queries, n=batch_size), loader, strict=False):  # noqa: E501
             batches = {k: v.to(self.device) for k, v in _batches.items()}
-            vectors = (
-                self.runner(batch=batches)[0].cpu().numpy().tolist()
-            )  # batch_size x vector_dim
+            vectors = self.runner(batch=batches)[0].cpu().numpy().tolist()  # batch_size x vector_dim
             for vector, query in zip(vectors, _queries, strict=False):  # noqa: B007
                 res_topk = self.store.search_by_embedding(vector, top_k=top_k)
                 answer.append(res_topk)

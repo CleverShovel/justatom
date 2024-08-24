@@ -81,7 +81,7 @@ class EarlyStopping:
                  and if the current model should get saved and the evaluation value used.
         """  # noqa: E501
 
-        if isinstance(self.metric, str):
+        if isinstance(self.metric, str):  # noqa: SIM108
             eval_value = eval_result[self.head][self.metric]
         else:
             eval_value = self.metric(eval_result)
@@ -89,7 +89,7 @@ class EarlyStopping:
         stopprocessing, savemodel = False, False
         if len(self.eval_values) <= self.min_evals:
             return stopprocessing, savemodel, eval_value
-        if self.mode == "min":
+        if self.mode == "min":  # noqa: SIM108
             delta = self.best_so_far - eval_value
         else:
             delta = eval_value - self.best_so_far
@@ -228,13 +228,9 @@ class Trainer:
         self.checkpoints_to_keep = checkpoints_to_keep
         self.checkpoint_every = checkpoint_every
         if self.checkpoint_every and not checkpoint_root_dir:
-            raise Exception(
-                "checkpoint_path needs to be supplied when using checkpoint_every."
-            )  # noqa: E501
+            raise Exception("checkpoint_path needs to be supplied when using checkpoint_every.")  # noqa: E501
         if checkpoint_on_sigterm and not checkpoint_root_dir:
-            raise Exception(
-                "checkpoint_path needs to be supplied when using checkpoint_on_sigterm."
-            )  # noqa: E501
+            raise Exception("checkpoint_path needs to be supplied when using checkpoint_on_sigterm.")  # noqa: E501
 
         self.from_epoch = from_epoch
         self.from_step = from_step
@@ -255,9 +251,7 @@ class Trainer:
         """  # noqa: E501
 
         # connect the prediction heads with the right output from processor
-        self.model.connect_heads_with_processor(
-            self.data_silo.processor.tasks, require_labels=True
-        )  # noqa: E501
+        self.model.connect_heads_with_processor(self.data_silo.processor.tasks, require_labels=True)  # noqa: E501
         # Check that the tokenizer(s) fits the language model(s)
         if hasattr(self.model, "language_model2"):
             self.model.verify_vocab_size(
@@ -265,9 +259,7 @@ class Trainer:
                 vocab_size2=len(self.data_silo.processor.passage_tokenizer),
             )
         else:
-            self.model.verify_vocab_size(
-                vocab_size=len(self.data_silo.processor.tokenizer)
-            )
+            self.model.verify_vocab_size(vocab_size=len(self.data_silo.processor.tokenizer))
         self.model.train()
 
         do_stopping = False
@@ -294,18 +286,14 @@ class Trainer:
                     # of runs with vs. without checkpointing using StreamingDataSilo. Reason: While skipping steps in StreamingDataSilo,  # noqa: E501
                     # we update the state of the random number generator (e.g. due to masking words), which can impact the model behaviour (e.g. dropout)  # noqa: E501
                     if step % 10000 == 0:
-                        logger.info(
-                            f"Skipping {step} out of {resume_from_step} steps ..."
-                        )  # noqa: E501
+                        logger.info(f"Skipping {step} out of {resume_from_step} steps ...")  # noqa: E501
                     if resume_from_step == step:
                         logger.info(f"Finished skipping {resume_from_step} steps ...")
                         resume_from_step = None
                     else:
                         continue
 
-                progress_bar.set_description(
-                    f"Train epoch {epoch}/{self.epochs-1} (Cur. train loss: {loss:.4f})"
-                )  # noqa: E501
+                progress_bar.set_description(f"Train epoch {epoch}/{self.epochs-1} (Cur. train loss: {loss:.4f})")  # noqa: E501
 
                 # Only for distributed training: we need to ensure that all ranks still have a batch left for training  # noqa: E501
                 if self.local_rank != -1:  # noqa: SIM102
@@ -335,17 +323,13 @@ class Trainer:
                         result = evaluator_dev.eval(self.model)
                         evaluator_dev.log_results(result, "Dev", self.global_step)
                         if self.early_stopping:
-                            do_stopping, save_model, eval_value = (
-                                self.early_stopping.check_stopping(result)
-                            )  # noqa: E501
+                            do_stopping, save_model, eval_value = self.early_stopping.check_stopping(result)  # noqa: E501
                             if save_model:
                                 logger.info(
                                     f"Saving current best model to {self.early_stopping.save_dir}, eval={eval_value}"  # noqa: E501
                                 )  # noqa: E501
                                 self.model.save(self.early_stopping.save_dir)
-                                self.data_silo.processor.save(
-                                    self.early_stopping.save_dir
-                                )
+                                self.data_silo.processor.save(self.early_stopping.save_dir)
                             if do_stopping:
                                 # log the stopping
                                 logger.info(
@@ -358,9 +342,7 @@ class Trainer:
                 batch = {key: batch[key].to(self.device) for key in batch}
                 # Forward & backward pass through model
                 logits = self.model.forward(**batch)
-                per_sample_loss = self.model.logits_to_loss(
-                    logits=logits, global_step=self.global_step, **batch
-                )  # noqa: E501
+                per_sample_loss = self.model.logits_to_loss(logits=logits, global_step=self.global_step, **batch)  # noqa: E501
                 loss = self.backward_propagate(per_sample_loss, step)
 
                 self.global_step += 1
@@ -393,16 +375,10 @@ class Trainer:
 
         # With early stopping we want to restore the best model
         if self.early_stopping and self.early_stopping.save_dir:
-            logger.info(
-                f"Restoring best model so far from {self.early_stopping.save_dir}"
-            )  # noqa: E501
+            logger.info(f"Restoring best model so far from {self.early_stopping.save_dir}")  # noqa: E501
             lm_name = self.model.language_model.name
-            self.model = AdaptiveModel.load(
-                self.early_stopping.save_dir, self.device, lm_name=lm_name
-            )  # noqa: E501
-            self.model.connect_heads_with_processor(
-                self.data_silo.processor.tasks, require_labels=True
-            )  # noqa: E501
+            self.model = AdaptiveModel.load(self.early_stopping.save_dir, self.device, lm_name=lm_name)  # noqa: E501
+            self.model.connect_heads_with_processor(self.data_silo.processor.tasks, require_labels=True)  # noqa: E501
 
         # Eval on test set
         if self.evaluator_test and self.local_rank in [0, -1]:
@@ -439,13 +415,9 @@ class Trainer:
         if step % self.grad_acc_steps == 0:
             if self.max_grad_norm is not None:
                 if self.use_amp:
-                    torch.nn.utils.clip_grad_norm_(
-                        amp.master_params(self.optimizer), self.max_grad_norm
-                    )  # noqa: E501
+                    torch.nn.utils.clip_grad_norm_(amp.master_params(self.optimizer), self.max_grad_norm)  # noqa: E501
                 else:
-                    torch.nn.utils.clip_grad_norm_(
-                        self.model.parameters(), self.max_grad_norm
-                    )  # noqa: E501
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.max_grad_norm)  # noqa: E501
             self.optimizer.step()
             self.optimizer.zero_grad()
             if self.lr_schedule:
@@ -490,7 +462,7 @@ class Trainer:
             if checkpoint_root_dir.exists():
                 if resume_from_checkpoint == "latest":
                     saved_checkpoints = cls._get_checkpoints(checkpoint_root_dir)
-                    if saved_checkpoints:
+                    if saved_checkpoints:  # noqa: SIM108
                         checkpoint_to_load = saved_checkpoints[0]  # latest checkpoint
                     else:
                         checkpoint_to_load = None
@@ -584,11 +556,7 @@ class Trainer:
         """
         Get a list of checkpoint dirs sorted by the number of training steps.
         """
-        dirs = [
-            d
-            for d in checkpoint_root_dir.iterdir()
-            if d.is_dir() and d.name.startswith("epoch")
-        ]  # noqa: E501
+        dirs = [d for d in checkpoint_root_dir.iterdir() if d.is_dir() and d.name.startswith("epoch")]  # noqa: E501
 
         checkpoints_with_epoch_and_step = []  # list of tuple(checkpoint_dir, epoch, step)  # noqa: E501
         for d in dirs:
@@ -690,7 +658,7 @@ class Trainer:
         :return: bool, whether all ranks have training data left
         """  # noqa: E501
 
-        if has_data:
+        if has_data:  # noqa: SIM108
             ranks_with_data = torch.ones(1).to(self.device)
         else:
             ranks_with_data = torch.zeros(1).to(self.device)

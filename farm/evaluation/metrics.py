@@ -135,9 +135,7 @@ def compute_report_metrics(head, preds, labels):
             all_possible_labels = list(range(len(head.label_list)))
         elif head.model_type == "text_similarity":
             labels = reduce(lambda x, y: x + list(y.astype("long")), labels, [])
-            preds = reduce(
-                lambda x, y: x + [0] * y[0] + [1] + [0] * (len(y) - y[0] - 1), preds, []
-            )  # noqa: E501
+            preds = reduce(lambda x, y: x + [0] * y[0] + [1] + [0] * (len(y) - y[0] - 1), preds, [])  # noqa: E501
             all_possible_labels = list(range(len(head.label_list)))
         else:
             all_possible_labels = head.label_list
@@ -257,17 +255,11 @@ def squad(preds, labels):
     # TODO change check for no_answer questions from using (start,end)==(-1,-1) to is_impossible flag in QAInput. This needs to be done for labels though. Not for predictions.  # noqa: E501
     overall_results = squad_base(preds, labels)
 
-    preds_answer = [
-        pred
-        for (pred, label) in zip(preds, labels, strict=False)
-        if (-1, -1) not in label
-    ]  # noqa: E501
+    preds_answer = [pred for (pred, label) in zip(preds, labels, strict=False) if (-1, -1) not in label]  # noqa: E501
     labels_answer = [label for label in labels if (-1, -1) not in label]
     answer_results = squad_base(preds_answer, labels_answer)
 
-    preds_no_answer = [
-        pred for (pred, label) in zip(preds, labels, strict=False) if (-1, -1) in label
-    ]  # noqa: E501
+    preds_no_answer = [pred for (pred, label) in zip(preds, labels, strict=False) if (-1, -1) in label]  # noqa: E501
     labels_no_answer = [label for label in labels if (-1, -1) in label]
     no_answer_results = squad_base(preds_no_answer, labels_no_answer)
 
@@ -299,12 +291,7 @@ def top_n_accuracy(preds, labels):
         f1_score = 0
         current_preds = preds[i][0]
         for idx, pred in enumerate(current_preds):  # noqa: B007
-            f1_score = max(
-                [
-                    squad_f1_single(current_preds, label, pred_idx=idx)
-                    for label in labels[i]
-                ]
-            )  # noqa: E501
+            f1_score = max([squad_f1_single(current_preds, label, pred_idx=idx) for label in labels[i]])  # noqa: E501
             if f1_score:
                 break
         if f1_score:
@@ -326,9 +313,7 @@ def text_similarity_acc_and_f1(preds, labels):
 
     :return: predicted ranks of passages for each query
     """  # noqa: E501
-    top_1_pred = reduce(
-        lambda x, y: x + [0] * y[0] + [1] + [0] * (len(y) - y[0] - 1), preds, []
-    )  # noqa: E501
+    top_1_pred = reduce(lambda x, y: x + [0] * y[0] + [1] + [0] * (len(y) - y[0] - 1), preds, [])  # noqa: E501
     labels = reduce(lambda x, y: x + list(y.astype("long")), labels, [])
     res = acc_and_f1(top_1_pred, labels)
     return res
@@ -345,9 +330,7 @@ def text_similarity_avg_ranks(preds, labels):
 
     :return: average predicted ranks of positive sequence/passage for each sample/query
     """  # noqa: E501
-    positive_idx_per_question = list(
-        reduce(lambda x, y: x + list((y == 1).nonzero()[0]), labels, [])
-    )  # noqa: E501
+    positive_idx_per_question = list(reduce(lambda x, y: x + list((y == 1).nonzero()[0]), labels, []))  # noqa: E501
     rank = 0
     for i, idx in enumerate(positive_idx_per_question):
         # aggregate the rank of the known gold passage in the sorted results for each question  # noqa: E501

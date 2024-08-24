@@ -51,16 +51,12 @@ def run_experiment(args):
         use_amp=args.general.use_amp,
     )
 
-    args.parameter.batch_size = int(
-        args.parameter.batch_size // args.parameter.gradient_accumulation_steps
-    )
+    args.parameter.batch_size = int(args.parameter.batch_size // args.parameter.gradient_accumulation_steps)
 
     set_all_seeds(args.general.seed)
 
     # Prepare Data
-    tokenizer = Tokenizer.load(
-        args.parameter.model, do_lower_case=args.parameter.lower_case
-    )
+    tokenizer = Tokenizer.load(args.parameter.model, do_lower_case=args.parameter.lower_case)
 
     processor = Processor.load(
         tokenizer=tokenizer,
@@ -95,14 +91,8 @@ def run_experiment(args):
     )
 
     # Init optimizer
-    optimizer_opts = (
-        args.optimizer.optimizer_opts.toDict()
-        if args.optimizer.optimizer_opts
-        else None
-    )  # noqa: E501
-    schedule_opts = (
-        args.optimizer.schedule_opts.toDict() if args.optimizer.schedule_opts else None
-    )  # noqa: E501
+    optimizer_opts = args.optimizer.optimizer_opts.toDict() if args.optimizer.optimizer_opts else None  # noqa: E501
+    schedule_opts = args.optimizer.schedule_opts.toDict() if args.optimizer.schedule_opts else None  # noqa: E501
     model, optimizer, lr_schedule = initialize_optimizer(
         model=model,
         learning_rate=args.optimizer.learning_rate,
@@ -115,9 +105,7 @@ def run_experiment(args):
         device=device,
     )
 
-    model_name = (
-        f"{model.language_model.name}-{model.language_model.language}-{args.task.name}"
-    )
+    model_name = f"{model.language_model.name}-{model.language_model.language}-{args.task.name}"
 
     # An early stopping instance can be used to save the model that performs best on the dev set  # noqa: E501
     # according to some metric and stop training when no improvement is happening for some iterations.  # noqa: E501
@@ -125,9 +113,7 @@ def run_experiment(args):
         early_stopping = EarlyStopping(
             metric=args.task.metric,
             mode=args.early_stopping.mode,
-            save_dir=Path(
-                f"{args.general.output_dir}/{model_name}_early_stopping"
-            ),  # where to save the best model  # noqa: E501
+            save_dir=Path(f"{args.general.output_dir}/{model_name}_early_stopping"),  # where to save the best model  # noqa: E501
             patience=args.early_stopping.patience,  # number of evaluations to wait for improvement before terminating the training  # noqa: E501
         )
     else:

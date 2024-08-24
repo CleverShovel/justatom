@@ -130,9 +130,7 @@ class Inferencer:
             self.benchmarker = Benchmarker()
 
         # Init device and distributed settings
-        device, n_gpu = initialize_device_settings(
-            use_cuda=gpu, local_rank=-1, use_amp=None
-        )  # noqa: E501
+        device, n_gpu = initialize_device_settings(use_cuda=gpu, local_rank=-1, use_amp=None)  # noqa: E501
 
         self.processor = processor
         self.model = model
@@ -259,16 +257,12 @@ class Inferencer:
         if tokenizer_args is None:
             tokenizer_args = {}
 
-        device, n_gpu = initialize_device_settings(
-            use_cuda=gpu, local_rank=-1, use_amp=None
-        )  # noqa: E501
+        device, n_gpu = initialize_device_settings(use_cuda=gpu, local_rank=-1, use_amp=None)  # noqa: E501
         name = os.path.basename(model_name_or_path)
 
         # a) either from local dir
         if os.path.exists(model_name_or_path):
-            model = BaseAdaptiveModel.load(
-                load_dir=model_name_or_path, device=device, strict=strict
-            )  # noqa: E501
+            model = BaseAdaptiveModel.load(load_dir=model_name_or_path, device=device, strict=strict)  # noqa: E501
             if task_type == "embeddings":
                 processor = InferenceProcessor.load_from_dir(model_name_or_path)
             else:
@@ -348,7 +342,7 @@ class Inferencer:
             self.process_pool = None
         else:
             if num_processes is None:  # use all CPU cores
-                if mp.cpu_count() > 3:
+                if mp.cpu_count() > 3:  # noqa: SIM108
                     num_processes = mp.cpu_count() - 1
                 else:
                     num_processes = mp.cpu_count()
@@ -376,9 +370,7 @@ class Inferencer:
         self.model.save(path)
         self.processor.save(path)
 
-    def inference_from_file(
-        self, file, multiprocessing_chunksize=None, streaming=False, return_json=True
-    ):  # noqa: E501
+    def inference_from_file(self, file, multiprocessing_chunksize=None, streaming=False, return_json=True):  # noqa: E501
         """
         Run down-stream inference on samples created from an input file.
         The file should be in the same format as the ones used during training
@@ -409,9 +401,7 @@ class Inferencer:
         else:
             return list(preds_all)
 
-    def inference_from_dicts(
-        self, dicts, return_json=True, multiprocessing_chunksize=None, streaming=False
-    ):
+    def inference_from_dicts(self, dicts, return_json=True, multiprocessing_chunksize=None, streaming=False):
         """
         Runs down-stream inference on samples created from input dictionaries.
         The format of the input `dicts` depends on the task:
@@ -455,12 +445,8 @@ class Inferencer:
         if len(self.model.prediction_heads) > 0:
             aggregate_preds = hasattr(self.model.prediction_heads[0], "aggregate_preds")
 
-        if (
-            self.process_pool is None
-        ):  # multiprocessing disabled (helpful for debugging or using in web frameworks)  # noqa: E501
-            predictions = self._inference_without_multiprocessing(
-                dicts, return_json, aggregate_preds
-            )  # noqa: E501
+        if self.process_pool is None:  # multiprocessing disabled (helpful for debugging or using in web frameworks)  # noqa: E501
+            predictions = self._inference_without_multiprocessing(dicts, return_json, aggregate_preds)  # noqa: E501
             return predictions
         else:  # use multiprocessing for inference
             # Calculate values of multiprocessing_chunksize and num_processes if not supplied in the parameters.  # noqa: E501
@@ -510,10 +496,8 @@ class Inferencer:
         :rtype: list
         """  # noqa: E501
         indices = list(range(len(dicts)))
-        dataset, tensor_names, problematic_ids, baskets = (
-            self.processor.dataset_from_dicts(  # noqa: E501
-                dicts, indices=indices, return_baskets=True
-            )
+        dataset, tensor_names, problematic_ids, baskets = self.processor.dataset_from_dicts(  # noqa: E501
+            dicts, indices=indices, return_baskets=True
         )
         self.problematic_sample_ids = problematic_ids
         if self.benchmarking:
@@ -521,9 +505,7 @@ class Inferencer:
 
         # TODO change format of formatted_preds in QA (list of dicts)
         if aggregate_preds:
-            preds_all = self._get_predictions_and_aggregate(
-                dataset, tensor_names, baskets
-            )  # noqa: E501
+            preds_all = self._get_predictions_and_aggregate(dataset, tensor_names, baskets)  # noqa: E501
         else:
             preds_all = self._get_predictions(dataset, tensor_names, baskets)
 
@@ -536,9 +518,7 @@ class Inferencer:
 
         return preds_all
 
-    def _inference_with_multiprocessing(
-        self, dicts, return_json, aggregate_preds, multiprocessing_chunksize
-    ):
+    def _inference_with_multiprocessing(self, dicts, return_json, aggregate_preds, multiprocessing_chunksize):
         """
         Implementation of inference. This method is a generator that yields the results.
 
@@ -575,9 +555,7 @@ class Inferencer:
             else:
                 # TODO change format of formatted_preds in QA (list of dicts)
                 if aggregate_preds:
-                    predictions = self._get_predictions_and_aggregate(
-                        dataset, tensor_names, baskets
-                    )
+                    predictions = self._get_predictions_and_aggregate(dataset, tensor_names, baskets)
                 else:
                     predictions = self._get_predictions(dataset, tensor_names, baskets)
 
@@ -596,9 +574,7 @@ class Inferencer:
         The resulting datasets of the processes are merged together afterwards"""
         dicts = [d[1] for d in chunk]
         indices = [d[0] for d in chunk]
-        dataset, tensor_names, problematic_sample_ids, baskets = (
-            processor.dataset_from_dicts(dicts, indices, return_baskets=True)
-        )  # noqa: E501
+        dataset, tensor_names, problematic_sample_ids, baskets = processor.dataset_from_dicts(dicts, indices, return_baskets=True)  # noqa: E501
         return dataset, tensor_names, problematic_sample_ids, baskets
 
     def _get_predictions(self, dataset, tensor_names, baskets):
@@ -708,9 +684,7 @@ class Inferencer:
             self.benchmarker.record("formatted_preds")
         return preds_all
 
-    def extract_vectors(
-        self, dicts, extraction_strategy="cls_token", extraction_layer=-1
-    ):  # noqa: E501
+    def extract_vectors(self, dicts, extraction_strategy="cls_token", extraction_layer=-1):  # noqa: E501
         """
         Converts a text into vector(s) using the language model only (no prediction head involved).
 
@@ -728,9 +702,7 @@ class Inferencer:
         :return: dict of predictions
         """  # noqa: E501
 
-        logger.warning(
-            "Deprecated! Please use Inferencer.inference_from_dicts() instead."
-        )  # noqa: E501
+        logger.warning("Deprecated! Please use Inferencer.inference_from_dicts() instead.")  # noqa: E501
         self.model.prediction_heads = torch.nn.ModuleList([])
         self.model.language_model.extraction_layer = extraction_layer
         self.model.language_model.extraction_strategy = extraction_strategy

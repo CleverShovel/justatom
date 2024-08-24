@@ -46,14 +46,10 @@ def set_all_seeds(seed, deterministic_cudnn=False):
 
 
 def calc_chunksize(num_dicts, min_chunksize=4, max_chunksize=2000, max_processes=128):
-    if mp.cpu_count() > 3:
-        num_cpus = min(
-            mp.cpu_count() - 1 or 1, max_processes
-        )  # -1 to keep a CPU core free for xxx  # noqa: E501
+    if mp.cpu_count() > 3:  # noqa: SIM108
+        num_cpus = min(mp.cpu_count() - 1 or 1, max_processes)  # -1 to keep a CPU core free for xxx  # noqa: E501
     else:
-        num_cpus = min(
-            mp.cpu_count(), max_processes
-        )  # when there are few cores, we use all of them  # noqa: E501
+        num_cpus = min(mp.cpu_count(), max_processes)  # when there are few cores, we use all of them  # noqa: E501
 
     dicts_per_cpu = np.ceil(num_dicts / num_cpus)
     # automatic adjustment of multiprocessing chunksize
@@ -61,9 +57,7 @@ def calc_chunksize(num_dicts, min_chunksize=4, max_chunksize=2000, max_processes
     # than 2, because we need it to sample another random sentence in LM finetuning
     # for large files we want to minimize processor spawning without giving too much data to one process, so we  # noqa: E501
     # clip it at 5k
-    multiprocessing_chunk_size = int(
-        np.clip((np.ceil(dicts_per_cpu / 5)), a_min=min_chunksize, a_max=max_chunksize)
-    )  # noqa: E501
+    multiprocessing_chunk_size = int(np.clip((np.ceil(dicts_per_cpu / 5)), a_min=min_chunksize, a_max=max_chunksize))  # noqa: E501
     # This lets us avoid cases in lm_finetuning where a chunk only has a single doc and hence cannot pick  # noqa: E501
     # a valid next sentence substitute from another document
     if num_dicts != 1:
@@ -132,9 +126,7 @@ class StdoutLogger(BaseMLLogger):
     Useful for services like AWS SageMaker, where you parse metrics from the actual logs"""  # noqa: E501
 
     def init_experiment(self, experiment_name, run_name=None, nested=True):
-        logger.info(
-            f"\n **** Starting experiment '{experiment_name}' (Run: {run_name})  ****"
-        )  # noqa: E501
+        logger.info(f"\n **** Starting experiment '{experiment_name}' (Run: {run_name})  ****")  # noqa: E501
 
     @classmethod
     def log_metrics(cls, metrics, step):
@@ -237,13 +229,9 @@ class WANDBLogger(BaseMLLogger):
                     " or try logging with `commit=False` when calling manually `wandb.log`."  # noqa: E501
                 )
             if cls.sync_step:
-                cls.experiment.log(
-                    metrics, step=(step + cls.offset_step) if step is not None else None
-                )  # noqa: E501
+                cls.experiment.log(metrics, step=(step + cls.offset_step) if step is not None else None)  # noqa: E501
             elif step is not None:
-                cls.experiment.log(
-                    {**metrics, "step": step + cls.offset_step}, **kwargs
-                )  # noqa: E501
+                cls.experiment.log({**metrics, "step": step + cls.offset_step}, **kwargs)  # noqa: E501
             else:
                 cls.experiment.log(metrics)
 
@@ -370,9 +358,7 @@ def get_dict_checksum(payload_dict):
     """
     Get MD5 checksum for a dict.
     """
-    checksum = hashlib.md5(
-        json.dumps(payload_dict, sort_keys=True).encode("utf-8")
-    ).hexdigest()  # noqa: E501
+    checksum = hashlib.md5(json.dumps(payload_dict, sort_keys=True).encode("utf-8")).hexdigest()  # noqa: E501
     return checksum
 
 
@@ -390,9 +376,7 @@ def get_dict_checksum(payload_dict):  # noqa: F811
     """
     Get MD5 checksum for a dict.
     """
-    checksum = hashlib.md5(
-        json.dumps(payload_dict, sort_keys=True).encode("utf-8")
-    ).hexdigest()  # noqa: E501
+    checksum = hashlib.md5(json.dumps(payload_dict, sort_keys=True).encode("utf-8")).hexdigest()  # noqa: E501
     return checksum
 
 
@@ -546,12 +530,8 @@ class Benchmarker:
             self.timing[name] = time.perf_counter()
 
     def summary(self):
-        preproc_time = self.calc_duration(
-            self.timing["init"], self.timing["dataset_single_proc"]
-        )  # noqa: E501
-        model_time = self.calc_duration(
-            self.timing["dataset_single_proc"], self.timing["formatted_preds"]
-        )  # noqa: E501
+        preproc_time = self.calc_duration(self.timing["init"], self.timing["dataset_single_proc"])  # noqa: E501
+        model_time = self.calc_duration(self.timing["dataset_single_proc"], self.timing["formatted_preds"])  # noqa: E501
         return preproc_time, model_time
 
     def calc_duration(self, start, end):
@@ -592,10 +572,7 @@ def all_gather_list(data, group=None, max_size=16384):
     world_size = dist.get_world_size()
     buffer_size = max_size * world_size
 
-    if (
-        not hasattr(all_gather_list, "_buffer")
-        or all_gather_list._buffer.numel() < buffer_size
-    ):
+    if not hasattr(all_gather_list, "_buffer") or all_gather_list._buffer.numel() < buffer_size:
         all_gather_list._buffer = torch.cuda.ByteTensor(buffer_size)
         all_gather_list._cpu_buffer = torch.ByteTensor(max_size).pin_memory()
 
@@ -603,16 +580,12 @@ def all_gather_list(data, group=None, max_size=16384):
     buffer.zero_()
     cpu_buffer = all_gather_list._cpu_buffer
 
-    assert (
-        enc_size < 256**SIZE_STORAGE_BYTES
-    ), f"Encoded object size should be less than {256 ** SIZE_STORAGE_BYTES} bytes"  # noqa: E501
+    assert enc_size < 256**SIZE_STORAGE_BYTES, f"Encoded object size should be less than {256 ** SIZE_STORAGE_BYTES} bytes"  # noqa: E501
 
     size_bytes = enc_size.to_bytes(SIZE_STORAGE_BYTES, byteorder="big")
 
     cpu_buffer[0:SIZE_STORAGE_BYTES] = torch.ByteTensor(list(size_bytes))
-    cpu_buffer[SIZE_STORAGE_BYTES : enc_size + SIZE_STORAGE_BYTES] = torch.ByteTensor(
-        list(enc)
-    )  # noqa: E501
+    cpu_buffer[SIZE_STORAGE_BYTES : enc_size + SIZE_STORAGE_BYTES] = torch.ByteTensor(list(enc))  # noqa: E501
 
     start = rank * max_size
     size = enc_size + SIZE_STORAGE_BYTES
@@ -626,15 +599,7 @@ def all_gather_list(data, group=None, max_size=16384):
             out_buffer = buffer[i * max_size : (i + 1) * max_size]
             size = int.from_bytes(out_buffer[0:SIZE_STORAGE_BYTES], byteorder="big")
             if size > 0:
-                result.append(
-                    pickle.loads(
-                        bytes(
-                            out_buffer[
-                                SIZE_STORAGE_BYTES : size + SIZE_STORAGE_BYTES
-                            ].tolist()
-                        )
-                    )
-                )  # noqa: E501
+                result.append(pickle.loads(bytes(out_buffer[SIZE_STORAGE_BYTES : size + SIZE_STORAGE_BYTES].tolist())))  # noqa: E501
         return result
     except pickle.UnpicklingError:
         raise Exception(  # noqa: B904

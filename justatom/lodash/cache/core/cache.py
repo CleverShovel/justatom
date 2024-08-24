@@ -2,15 +2,11 @@ from collections import OrderedDict
 
 
 class Cache(OrderedDict):
-    def __init__(
-        self, *args, size: int = 2077, mem_size: int | None = 10_000, **kwargs
-    ):  # noqa: E501
+    def __init__(self, *args, size: int = 2077, mem_size: int | None = 10_000, **kwargs):  # noqa: E501
         assert size > 0
         self.size = size
         self.mem_size = mem_size
-        assert (
-            mem_size >= 10_000
-        ), f"Memory size {mem_size} is not possible. Has to be >= {10_000}"  # noqa: E501
+        assert mem_size >= 10_000, f"Memory size {mem_size} is not possible. Has to be >= {10_000}"  # noqa: E501
         super().__init__(*args, **kwargs)
 
     def __setitem__(self, key, value):

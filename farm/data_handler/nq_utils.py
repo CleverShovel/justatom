@@ -71,9 +71,7 @@ def sample_to_features_qa_Natural_Questions(
     # Generate a start of word vector for the full sequence (i.e. question + answer + special tokens).  # noqa: E501
     # This will allow us to perform evaluation during training without clear text.
     # Note that in the current implementation, special tokens do not count as start of word.  # noqa: E501
-    start_of_word = combine_vecs(
-        question_start_of_word, passage_start_of_word, tokenizer, spec_tok_val=0
-    )  # noqa: E501
+    start_of_word = combine_vecs(question_start_of_word, passage_start_of_word, tokenizer, spec_tok_val=0)  # noqa: E501
 
     # Combines question_tokens and passage_tokens (str) into a single encoded vector of token indices (int)  # noqa: E501
     # called input_ids. This encoded vector also contains special tokens (e.g. [CLS]). It will have length =  # noqa: E501
@@ -96,12 +94,8 @@ def sample_to_features_qa_Natural_Questions(
             return_token_type_ids=True,
         )
 
-        n_tokens_encoded = len(encoded["input_ids"]) - encoded[
-            "special_tokens_mask"
-        ].count(1)  # noqa: E501
-        n_tokens_with_metadata = len(sample.tokenized["question_tokens"]) + len(
-            sample.tokenized["passage_tokens"]
-        )  # noqa: E501
+        n_tokens_encoded = len(encoded["input_ids"]) - encoded["special_tokens_mask"].count(1)  # noqa: E501
+        n_tokens_with_metadata = len(sample.tokenized["question_tokens"]) + len(sample.tokenized["passage_tokens"])  # noqa: E501
 
         if n_tokens_encoded != n_tokens_with_metadata:
             tokens_encoded = tokenizer.convert_ids_to_tokens(encoded["input_ids"])
@@ -243,23 +237,14 @@ def combine_vecs(question_vec, passage_vec, tokenizer, spec_tok_val=-1):
     the returned vector for special tokens like [CLS] where the value is determine by spec_tok_val."""  # noqa: E501
 
     # Join question_label_vec and passage_label_vec and add slots for special tokens
-    vec = tokenizer.build_inputs_with_special_tokens(
-        token_ids_0=question_vec, token_ids_1=passage_vec
-    )
+    vec = tokenizer.build_inputs_with_special_tokens(token_ids_0=question_vec, token_ids_1=passage_vec)
     if tokenizer.is_fast:
-        spec_toks_mask = tokenizer.get_special_tokens_mask(
-            token_ids_0=vec, already_has_special_tokens=True
-        )
+        spec_toks_mask = tokenizer.get_special_tokens_mask(token_ids_0=vec, already_has_special_tokens=True)
     else:
-        spec_toks_mask = tokenizer.get_special_tokens_mask(
-            token_ids_0=question_vec, token_ids_1=passage_vec
-        )
+        spec_toks_mask = tokenizer.get_special_tokens_mask(token_ids_0=question_vec, token_ids_1=passage_vec)
 
     # If a value in vec corresponds to a special token, it will be replaced with spec_tok_val  # noqa: E501
-    combined = [
-        v if not special_token else spec_tok_val
-        for v, special_token in zip(vec, spec_toks_mask, strict=False)
-    ]  # noqa: E501
+    combined = [v if not special_token else spec_tok_val for v, special_token in zip(vec, spec_toks_mask, strict=False)]  # noqa: E501
 
     return combined
 
@@ -294,9 +279,7 @@ def get_camembert_seq_2_start(input_ids):
     return second_backslash_s + 1
 
 
-def create_samples_qa_Natural_Question(
-    dictionary, max_query_len, max_seq_len, doc_stride, n_special_tokens
-):  # noqa: E501
+def create_samples_qa_Natural_Question(dictionary, max_query_len, max_seq_len, doc_stride, n_special_tokens):  # noqa: E501
     """
     This method will split question-document pairs from the SampleBasket into question-passage pairs which will
     each form one sample. The "t" and "c" in variables stand for token and character respectively.
@@ -321,9 +304,7 @@ def create_samples_qa_Natural_Question(
     # Perform chunking of document into passages. The sliding window moves in steps of doc_stride.  # noqa: E501
     # passage_spans is a list of dictionaries where each defines the start and end of each passage  # noqa: E501
     # on both token and character level
-    passage_spans = chunk_into_passages(
-        doc_offsets, doc_stride, passage_len_t, doc_text
-    )
+    passage_spans = chunk_into_passages(doc_offsets, doc_stride, passage_len_t, doc_text)
     for passage_span in passage_spans:
         # Unpack each variable in the dictionary. The "_t" and "_c" indicate
         # whether the index is on the token or character level
@@ -342,9 +323,7 @@ def create_samples_qa_Natural_Question(
         passage_text = dictionary["document_text"][passage_start_c:passage_end_c]
 
         # Deal with the potentially many answers (e.g. Squad or NQ dev set)
-        answers_clear, answers_tokenized = process_answers(
-            dictionary["answers"], doc_offsets, passage_start_c, passage_start_t
-        )
+        answers_clear, answers_tokenized = process_answers(dictionary["answers"], doc_offsets, passage_start_c, passage_start_t)
 
         clear_text = {
             "passage_text": passage_text,
@@ -359,15 +338,11 @@ def create_samples_qa_Natural_Question(
             "passage_start_of_word": passage_start_of_word,
             "question_tokens": question_tokens,
             "question_offsets": question_offsets,
-            "question_start_of_word": dictionary["question_start_of_word"][
-                :max_query_len
-            ],  # noqa: E501
+            "question_start_of_word": dictionary["question_start_of_word"][:max_query_len],  # noqa: E501
             "answers": answers_tokenized,
             "document_offsets": doc_offsets,
         }  # So that to_doc_preds can access them  # noqa: E501
-        samples.append(
-            Sample(id=passage_id, clear_text=clear_text, tokenized=tokenized)
-        )
+        samples.append(Sample(id=passage_id, clear_text=clear_text, tokenized=tokenized))
     return samples
 
 
@@ -379,7 +354,7 @@ def process_answers(answers, doc_offsets, passage_start_c, passage_start_t):
         # This section calculates start and end relative to document
         answer_text = answer["text"]
         answer_len_c = len(answer_text)
-        if "offset" in answer:
+        if "offset" in answer:  # noqa: SIM108
             answer_start_c = answer["offset"]
         else:
             answer_start_c = answer["answer_start"]
@@ -477,10 +452,7 @@ def convert_qa_input_dict(infer_dict):
         questions = infer_dict["questions"]
         text = infer_dict["text"]
         uid = infer_dict.get("id", None)
-        qas = [
-            {"question": q, "id": uid, "answers": [], "answer_type": None}
-            for i, q in enumerate(questions)
-        ]
+        qas = [{"question": q, "id": uid, "answers": [], "answer_type": None} for i, q in enumerate(questions)]
         converted = {"qas": qas, "context": text}
         return converted
     except KeyError:

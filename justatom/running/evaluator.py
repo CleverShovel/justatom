@@ -32,13 +32,9 @@ class EvaluatorRunner(IEvaluatorRunner):
         hr5 = RetrievalHitRate(top_k=5)  # noqa: F841
         mrr = RetrievalMRR()  # noqa: F841
         metrics_top_k_names = set(metrics_top_k)
-        metrics_top_k = {
-            f"{m}{tk}": IAdditiveMetric() for m in metrics_top_k for tk in eval_top_k
-        }  # hr2, hr5, mrr  # noqa: E501
+        metrics_top_k = {f"{m}{tk}": IAdditiveMetric() for m in metrics_top_k for tk in eval_top_k}  # hr2, hr5, mrr  # noqa: E501
         for batch_queries in tqdm(chunked(queries, n=batch_size)):
-            res_topk = self.ir.retrieve_topk(
-                queries=batch_queries, batch_size=batch_size, top_k=top_k
-            )  # noqa: E501
+            res_topk = self.ir.retrieve_topk(queries=batch_queries, batch_size=batch_size, top_k=top_k)  # noqa: E501
             # res_topk[i][j]  # prediction for the i-th sample @ j-th position.
             for question, docs_topk in zip(batch_queries, res_topk, strict=False):
                 labels = list(stl.flatten_list([c.meta["labels"] for c in docs_topk]))

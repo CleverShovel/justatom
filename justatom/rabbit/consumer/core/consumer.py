@@ -9,9 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class Consumer(Base):
-    def __init__(
-        self, queue_name: str, binding_key: str, config: dict, report_fn: Callable
-    ):
+    def __init__(self, queue_name: str, binding_key: str, config: dict, report_fn: Callable):
         self.queue_name = queue_name
         self.binding_key = binding_key
         self.config = config
@@ -36,7 +34,5 @@ class Consumer(Base):
             exchange_type=self.config["exchange_type"],
             durable=True,
         )  # noqa: E501
-        channel.basic_consume(
-            queue=self.queue_name, on_message_callback=self.report_fn, auto_ack=True
-        )  # noqa: E501
+        channel.basic_consume(queue=self.queue_name, on_message_callback=self.report_fn, auto_ack=True)  # noqa: E501
         channel.start_consuming()

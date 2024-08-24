@@ -20,9 +20,7 @@ class NUMGenerator:
                 yield sc.special.gamma(xi)
 
     def beta(self, x: float | list[float], y: float | list[float]) -> Generator:
-        assert type(x) is type(
-            y
-        ), f"Data types do not match between {type(x)} != {type(y)}."  # noqa: E501
+        assert type(x) is type(y), f"Data types do not match between {type(x)} != {type(y)}."  # noqa: E501
         if isinstance(x, (int, float)):  # noqa: UP038
             yield sc.special.beta(x, y)
         elif isinstance(x, list):
@@ -34,9 +32,7 @@ class NUMGenerator:
             )  # noqa: E501
 
     def volume(self, eps: float, r: float, shape: str = "sphere") -> Generator:
-        assert (
-            shape in self.SHAPES
-        ), f"Provided shape={shape} is not one of {','.join(self.SHAPES)}"  # noqa: E501
+        assert shape in self.SHAPES, f"Provided shape={shape} is not one of {','.join(self.SHAPES)}"  # noqa: E501
         # TODO:
         return 1
 

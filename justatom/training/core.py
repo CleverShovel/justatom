@@ -17,14 +17,10 @@ class ILTrainer(L.Trainer):
             dirpath = os.path.split(filepath)[0]
             runner = self.model
             # runner have model and heads.
-            save_dir = (
-                Path(dirpath) / f"epoch={self.current_epoch}-step={self.global_step}"
-            )  # noqa: E501
+            save_dir = Path(dirpath) / f"epoch={self.current_epoch}-step={self.global_step}"  # noqa: E501
             save_dir.mkdir(parents=True, exist_ok=True)
             runner.runner.save(save_dir)
-            logger.info(
-                f"Saving checkpoint epoch={self.current_epoch}-step={self.global_step}"
-            )  # noqa: E501
+            logger.info(f"Saving checkpoint epoch={self.current_epoch}-step={self.global_step}")  # noqa: E501
 
     def remove_checkpoint(self, filepath):
         if self.is_global_zero:

@@ -65,19 +65,11 @@ class FocalLoss(nn.Module):
         ignore_index: int = -100,
     ) -> None:
         super(FocalLoss, self).__init__()  # noqa: UP008
-        if (
-            alpha is not None
-            and not isinstance(alpha, float)
-            and not isinstance(alpha, Iterable)
-        ):
+        if alpha is not None and not isinstance(alpha, float) and not isinstance(alpha, Iterable):
             raise ValueError(
                 f"alpha value should be None, float value or list of real values. Got: {type(alpha)}"  # noqa: E501
             )
-        self.alpha: float | torch.Tensor | None = (
-            alpha
-            if alpha is None or isinstance(alpha, float)
-            else torch.FloatTensor(alpha)
-        )
+        self.alpha: float | torch.Tensor | None = alpha if alpha is None or isinstance(alpha, float) else torch.FloatTensor(alpha)
         if isinstance(alpha, float) and not 0.0 <= alpha <= 1.0:
             warnings.warn("[Focal Loss] alpha value is to high must be between [0, 1]")  # noqa: B028
 
@@ -97,9 +89,7 @@ class FocalLoss(nn.Module):
                 f"input tensors should be of shape (N, C) and (N,). Got: {input.shape} and {target.shape}"  # noqa: E501
             )
         if input.device != target.device:
-            raise ValueError(
-                f"input and target must be in the same device. Got: {input.device}"
-            )
+            raise ValueError(f"input and target must be in the same device. Got: {input.device}")
 
         # filter labels
         target = target.type(torch.long)
@@ -115,9 +105,7 @@ class FocalLoss(nn.Module):
         logpt = logpt.gather(1, target.unsqueeze(-1)).squeeze()
         focal_loss = -1 * (1 - pt) ** self.gamma * logpt
 
-        weights = torch.ones_like(
-            focal_loss, dtype=focal_loss.dtype, device=focal_loss.device
-        )
+        weights = torch.ones_like(focal_loss, dtype=focal_loss.dtype, device=focal_loss.device)
         if self.alpha is not None:
             if isinstance(self.alpha, float):
                 alpha = torch.tensor(self.alpha, device=input.device)
@@ -130,11 +118,7 @@ class FocalLoss(nn.Module):
         if self.reduction == "none":
             loss = tmp_loss
         elif self.reduction == "mean":
-            loss = (
-                tmp_loss.sum() / weights.sum()
-                if torch.is_tensor(self.alpha)
-                else torch.mean(tmp_loss)
-            )
+            loss = tmp_loss.sum() / weights.sum() if torch.is_tensor(self.alpha) else torch.mean(tmp_loss)
         elif self.reduction == "sum":
             loss = tmp_loss.sum()
         else:
@@ -211,13 +195,9 @@ class DiceLoss(nn.Module):
                     f"number of elements in input and target shapes must be the same. Got: {input.shape}"  # noqa: E501
                 )
         else:
-            raise ValueError(
-                f"Invalid input shape, we expect or NxC. Got: {input.shape}"
-            )
+            raise ValueError(f"Invalid input shape, we expect or NxC. Got: {input.shape}")
         if not input.device == target.device:
-            raise ValueError(
-                f"input and target must be in the same device. Got: {input.device}"
-            )
+            raise ValueError(f"input and target must be in the same device. Got: {input.device}")
         # compute softmax over the classes axis
         input_soft = F.softmax(input, dim=1)
 
@@ -231,19 +211,13 @@ class DiceLoss(nn.Module):
         input_soft = input_soft[input_mask]
 
         # create the labels one hot tensor
-        target_one_hot = (
-            F.one_hot(target, num_classes=input_soft.shape[-1])
-            .to(input.device)
-            .type(input_soft.dtype)
-        )
+        target_one_hot = F.one_hot(target, num_classes=input_soft.shape[-1]).to(input.device).type(input_soft.dtype)
 
         # compute the actual dice score
         intersection = torch.sum(input_soft * target_one_hot, dim=-1)
         cardinality = torch.sum(input_soft + target_one_hot, dim=-1)
 
-        dice_score = (2.0 * intersection + self.smooth) / (
-            cardinality + self.eps + self.smooth
-        )
+        dice_score = (2.0 * intersection + self.smooth) / (cardinality + self.eps + self.smooth)
         dice_loss = 1.0 - dice_score
 
         if self.reduction is None or self.reduction == "none":
@@ -322,13 +296,9 @@ class TverskyLoss(nn.Module):
                     f"number of elements in input and target shapes must be the same. Got: {input.shape}"  # noqa: E501
                 )
         else:
-            raise ValueError(
-                f"Invalid input shape, we expect or NxC. Got: {input.shape}"
-            )
+            raise ValueError(f"Invalid input shape, we expect or NxC. Got: {input.shape}")
         if not input.device == target.device:
-            raise ValueError(
-                f"input and target must be in the same device. Got: {input.device}"
-            )
+            raise ValueError(f"input and target must be in the same device. Got: {input.device}")
         # compute softmax over the classes axis
         input_soft = F.softmax(input, dim=1)
 
@@ -342,11 +312,7 @@ class TverskyLoss(nn.Module):
         input_soft = input_soft[input_mask]
 
         # create the labels one hot tensor
-        target_one_hot = (
-            F.one_hot(target, num_classes=input.shape[1])
-            .to(input.device)
-            .type(input_soft.dtype)
-        )
+        target_one_hot = F.one_hot(target, num_classes=input.shape[1]).to(input.device).type(input_soft.dtype)
 
         # compute the actual dice score
         intersection = torch.sum(input_soft * target_one_hot, -1)
@@ -355,9 +321,7 @@ class TverskyLoss(nn.Module):
 
         numerator = intersection
         denominator = intersection + self.alpha * fps + self.beta * fns
-        tversky_loss = (numerator + self.smooth) / (
-            denominator + self.eps + self.smooth
-        )
+        tversky_loss = (numerator + self.smooth) / (denominator + self.eps + self.smooth)
         tversky_loss = 1.0 - tversky_loss
 
         if self.reduction is None or self.reduction == "none":
@@ -390,9 +354,7 @@ class TripletLoss(nn.Module):
         n = inputs.size(0)  # batch_size samples
         _device = inputs.device
         # pairwise distances
-        dist = pdist(
-            inputs
-        )  # The same as taking inputs @ inputs.T - main diagonal => n x n
+        dist = pdist(inputs)  # The same as taking inputs @ inputs.T - main diagonal => n x n
 
         # find the hardest positive and negative
         mask_pos = targets.expand(n, n).eq(targets.expand(n, n).t())
@@ -411,9 +373,7 @@ class TripletLoss(nn.Module):
         else:
             # hard negative
             # 1. Fill with -inf [i,j] matrix. (the same shape as dist)
-            ninf = torch.ones_like(dist).to(_device) * float(
-                "-inf"
-            )  # need to move to device
+            ninf = torch.ones_like(dist).to(_device) * float("-inf")  # need to move to device
             # 2. Positive max distance calculation within the same groups
             #    dist_p.shape = batch_size.
             #    dist_p[i] => max(distance(sample_i, sample_j) : sample_j and sample_i belong to the same group))  # noqa: E501
@@ -435,22 +395,16 @@ class TripletLoss(nn.Module):
         with torch.no_grad():
             _, top_idx = torch.topk(dist, k=2, largest=False)
             top_idx = top_idx[:, 1:]
-            flat_idx = top_idx.squeeze() + n * torch.arange(
-                n, out=torch.LongTensor()
-            ).to(_device)
+            flat_idx = top_idx.squeeze() + n * torch.arange(n, out=torch.LongTensor()).to(_device)
             top1_is_same = torch.take(mask_pos, flat_idx)
             metrics["prec"] = top1_is_same.float().mean().item()
             metrics["dist_acc"] = (dist_n > dist_p).float().mean().item()
             if not isinstance(self.margin, str):
-                metrics["dist_sm"] = (
-                    (dist_n > dist_p + self.margin).float().mean().item()
-                )
+                metrics["dist_sm"] = (dist_n > dist_p + self.margin).float().mean().item()
                 metrics["nonzero_count"] = torch.nonzero(diff).size(0)
             metrics["dist_p"] = dist_p.mean().item()
             metrics["dist_n"] = dist_n.mean().item()
-            metrics["rel_dist"] = (
-                ((dist_n - dist_p) / torch.max(dist_p, dist_n)).mean().item()
-            )
+            metrics["rel_dist"] = ((dist_n - dist_p) / torch.max(dist_p, dist_n)).mean().item()
 
         return loss, metrics
 
@@ -543,9 +497,7 @@ class ContrastiveLoss(nn.Module):
 
         # Check matching number of samples.
         if len(queries) != len(pos_queries):
-            raise ValueError(
-                "<queries> and <pos_queries> must must have the same number of samples."
-            )
+            raise ValueError("<queries> and <pos_queries> must must have the same number of samples.")
         if neg_queries is not None:  # noqa: SIM102
             if negative_mode == "paired" and len(queries) != len(neg_queries):
                 raise ValueError(
@@ -565,9 +517,7 @@ class ContrastiveLoss(nn.Module):
 
         # Normalize to unit vectors
 
-        queries, pos_queries, neg_queries = self.normalize(
-            queries, pos_queries, neg_queries
-        )
+        queries, pos_queries, neg_queries = self.normalize(queries, pos_queries, neg_queries)
         if neg_queries is not None:
             # Explicit negative keys
 
@@ -638,9 +588,7 @@ class UMAPLoss(nn.Module):
         )
 
         # convert probabilities to distances
-        probabilities_distance = self.convert_distance_to_probability(
-            distance_embedding, _a, _b
-        )
+        probabilities_distance = self.convert_distance_to_probability(distance_embedding, _a, _b)
         # set true probabilities based on negative sampling
         probabilities_graph = torch.cat(
             (
@@ -669,15 +617,10 @@ class UMAPLoss(nn.Module):
         repulsion_strength=1.0,
     ):
         # cross entropy
-        attraction_term = -probabilities_graph * torch.nn.functional.logsigmoid(
-            probabilities_distance
-        )
+        attraction_term = -probabilities_graph * torch.nn.functional.logsigmoid(probabilities_distance)
         repellant_term = (
             -(1.0 - probabilities_graph)
-            * (
-                torch.nn.functional.logsigmoid(probabilities_distance)
-                - probabilities_distance
-            )
+            * (torch.nn.functional.logsigmoid(probabilities_distance) - probabilities_distance)
             * repulsion_strength
         )
 

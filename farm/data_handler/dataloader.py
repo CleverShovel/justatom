@@ -40,7 +40,7 @@ class NamedDataLoader(DataLoader):
             the name of the tensor and the value is the tensor itself
             """  # noqa: E501
 
-            if type(dataset).__name__ == "_StreamingDataSet":
+            if type(dataset).__name__ == "_StreamingDataSet":  # noqa: SIM108
                 _tensor_names = dataset.tensor_names
             else:
                 _tensor_names = tensor_names
@@ -93,7 +93,5 @@ def covert_dataset_to_dataloader(dataset, sampler, batch_size):
     :return: A DataLoader that wraps the input Dataset.
     """
     sampler_initialized = sampler(dataset)
-    data_loader = DataLoader(
-        dataset, sampler=sampler_initialized, batch_size=batch_size
-    )
+    data_loader = DataLoader(dataset, sampler=sampler_initialized, batch_size=batch_size)
     return data_loader

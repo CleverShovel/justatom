@@ -10,15 +10,11 @@ def get_dict_checksum(payload_dict):
     """
     Get MD5 checksum for a dict.
     """
-    checksum = hashlib.md5(
-        json.dumps(payload_dict, sort_keys=True).encode("utf-8")
-    ).hexdigest()  # noqa: E501
+    checksum = hashlib.md5(json.dumps(payload_dict, sort_keys=True).encode("utf-8")).hexdigest()  # noqa: E501
     return checksum
 
 
-def igniset(
-    dicts: list[dict], processor: IProcessor, batch_size: int = 1, shuffle: bool = False
-):  # noqa: E501
+def igniset(dicts: list[dict], processor: IProcessor, batch_size: int = 1, shuffle: bool = False):  # noqa: E501
     from torch.utils.data import ConcatDataset
     from tqdm.autonotebook import tqdm
 
@@ -26,15 +22,11 @@ def igniset(
     num_dicts = len(dicts)
     problems = set()
     dicts = random.sample(dicts, len(dicts)) if shuffle else dicts
-    for i in tqdm(
-        range(0, num_dicts, batch_size), desc="Preprocessing dataset", unit=" Dicts"
-    ):  # noqa: E501
+    for i in tqdm(range(0, num_dicts, batch_size), desc="Preprocessing dataset", unit=" Dicts"):  # noqa: E501
         processing_batch = dicts[i : i + batch_size]
         dataset, tensor_names, problematic_sample_ids = processor.dataset_from_dicts(
             dicts=processing_batch,
-            indices=list(
-                range(len(processing_batch))
-            ),  # TODO remove indices  # noqa: E501
+            indices=list(range(len(processing_batch))),  # TODO remove indices  # noqa: E501
         )
         datasets.append(dataset)
         problems.update(problematic_sample_ids)

@@ -93,9 +93,7 @@ class INNDocStore(abc.ABC):
         pass
 
     @abc.abstractclassmethod
-    def get_document_by_id(
-        self, id: str, headers: dict[str, str] | None = None
-    ) -> Document | None:  # noqa: E501
+    def get_document_by_id(self, id: str, headers: dict[str, str] | None = None) -> Document | None:  # noqa: E501
         pass
 
     @abc.abstractmethod
@@ -129,9 +127,7 @@ class INNDocStore(abc.ABC):
         self.ids_iterator = self.ids_iterator[1:]
         return ret
 
-    def _drop_duplicate_documents(
-        self, documents: list[Document], index: str | None = None
-    ) -> list[Document]:  # noqa: E501
+    def _drop_duplicate_documents(self, documents: list[Document], index: str | None = None) -> list[Document]:  # noqa: E501
         """
         Drop duplicates documents based on same hash ID
         :param documents: A list of Document objects.
@@ -179,9 +175,7 @@ class INNDocStore(abc.ABC):
         index = index or self.index
         if duplicate_documents in ("skip", "fail"):
             documents = self._drop_duplicate_documents(documents, index)
-            documents_found = self.get_documents_by_id(
-                ids=[doc.id for doc in documents], index=index, headers=headers
-            )  # noqa: E501
+            documents_found = self.get_documents_by_id(ids=[doc.id for doc in documents], index=index, headers=headers)  # noqa: E501
             ids_exist_in_db: list[str] = [doc.id for doc in documents_found]
 
             if len(ids_exist_in_db) > 0 and duplicate_documents == "fail":
@@ -189,9 +183,7 @@ class INNDocStore(abc.ABC):
                     f"Document with ids '{', '.join(ids_exist_in_db)} already exists in index = '{index}'."  # noqa: E501
                 )
 
-            documents = list(
-                filter(lambda doc: doc.id not in ids_exist_in_db, documents)
-            )  # noqa: E501
+            documents = list(filter(lambda doc: doc.id not in ids_exist_in_db, documents))  # noqa: E501
 
         return documents
 

@@ -60,9 +60,7 @@ class IModel(nn.Module, abc.ABC):
             # it's a local directory in FARM format
             with open(config_file) as f:
                 config = json.load(f)
-            language_model = cls.subclasses[config["klass"]].load(
-                model_name_or_path, **kwargs
-            )  # noqa: E501
+            language_model = cls.subclasses[config["klass"]].load(model_name_or_path, **kwargs)  # noqa: E501
         else:
             from justatom.modeling.prime import COMMON_CLASS_MAPPING
 
@@ -141,9 +139,7 @@ class ILanguageModel(nn.Module, abc.ABC):
             # it's a local directory in FARM format
             with open(config_file) as f:
                 config = json.load(f)
-            language_model = cls.subclasses[config["klass"]].load(
-                model_name_or_path, **kwargs
-            )  # noqa: E501
+            language_model = cls.subclasses[config["klass"]].load(model_name_or_path, **kwargs)  # noqa: E501
         else:
             from justatom.modeling.prime import HF_CLASS_MAPPING
 
@@ -161,8 +157,7 @@ class ILanguageModel(nn.Module, abc.ABC):
         self,
         input_ids: torch.Tensor,
         attention_mask: torch.Tensor,
-        segment_ids: torch.Tensor
-        | None,  # DistilBERT does not use them, see DistilBERTLanguageModel  # noqa: E501
+        segment_ids: torch.Tensor | None,  # DistilBERT does not use them, see DistilBERTLanguageModel  # noqa: E501
         output_hidden_states: bool | None = None,
         output_attentions: bool | None = None,
         return_dict: bool = False,
@@ -202,9 +197,7 @@ class ILanguageModel(nn.Module, abc.ABC):
                     "Can't get the output dimension before loading the model."
                 )  # noqa: B904, E501
 
-        raise ModelingError(
-            "Could not infer the output dimensions of the language model."
-        )  # noqa: E501
+        raise ModelingError("Could not infer the output dimensions of the language model.")  # noqa: E501
 
     def save_config(self, save_dir: Path | str):
         """
@@ -260,9 +253,7 @@ class ILanguageModel(nn.Module, abc.ABC):
         :param kwargs: kwargs
         :return: A list of dictionaries containing predictions, for example: [{"context": "some text", "vec": [-0.01, 0.5 ...]}].
         """  # noqa: E501
-        if not hasattr(self, "extraction_layer") or not hasattr(
-            self, "extraction_strategy"
-        ):  # noqa: E501
+        if not hasattr(self, "extraction_layer") or not hasattr(self, "extraction_strategy"):  # noqa: E501
             raise ModelingError(
                 "`extraction_layer` or `extraction_strategy` not specified for LM. "
                 "Make sure to set both, e.g. via Inferencer(extraction_strategy='cls_token', extraction_layer=-1)`"  # noqa: E501
@@ -284,10 +275,7 @@ class ILanguageModel(nn.Module, abc.ABC):
         elif self.extraction_strategy == "per_token":
             vecs = sequence_output.cpu().numpy()
 
-        elif (
-            self.extraction_strategy == "reduce_mean"
-            or self.extraction_strategy == "reduce_max"
-        ):  # noqa: E501
+        elif self.extraction_strategy == "reduce_mean" or self.extraction_strategy == "reduce_max":  # noqa: E501
             vecs = self._pool_tokens(
                 sequence_output,
                 padding_mask,
@@ -326,13 +314,9 @@ class ILanguageModel(nn.Module, abc.ABC):
         ignore_mask_3d = np.zeros(token_vecs.shape, dtype=bool)
         ignore_mask_3d[:, :, :] = ignore_mask_2d[:, :, np.newaxis]
         if strategy == "reduce_max":
-            pooled_vecs = (
-                np.ma.array(data=token_vecs, mask=ignore_mask_3d).max(axis=1).data
-            )  # noqa: E501
+            pooled_vecs = np.ma.array(data=token_vecs, mask=ignore_mask_3d).max(axis=1).data  # noqa: E501
         if strategy == "reduce_mean":
-            pooled_vecs = (
-                np.ma.array(data=token_vecs, mask=ignore_mask_3d).mean(axis=1).data
-            )  # noqa: E501
+            pooled_vecs = np.ma.array(data=token_vecs, mask=ignore_mask_3d).mean(axis=1).data  # noqa: E501
 
         return pooled_vecs
 

@@ -13,9 +13,7 @@ from tenacity import (
 logger = logging.getLogger(__file__)
 
 
-def request_with_retry(
-    attempts: int = 3, status_codes_to_retry: list[int] | None = None, **kwargs
-) -> requests.Response:
+def request_with_retry(attempts: int = 3, status_codes_to_retry: list[int] | None = None, **kwargs) -> requests.Response:
     """
     Executes an HTTP request with a configurable exponential backoff retry on failures.
 

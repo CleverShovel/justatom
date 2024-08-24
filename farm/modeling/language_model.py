@@ -152,23 +152,15 @@ class LanguageModel(nn.Module):
             logger.info(f"Model found locally at {pretrained_model_name_or_path}")
             # it's a local directory in FARM format
             config = json.load(open(config_file))  # noqa: SIM115
-            language_model = cls.subclasses[config["name"]].load(
-                pretrained_model_name_or_path
-            )  # noqa: E501
+            language_model = cls.subclasses[config["name"]].load(pretrained_model_name_or_path)  # noqa: E501
         else:
             logger.info(f"Could not find {pretrained_model_name_or_path} locally.")
-            logger.info(
-                "Looking on Transformers Model Hub (in local cache and online)..."
-            )  # noqa: E501
+            logger.info("Looking on Transformers Model Hub (in local cache and online)...")  # noqa: E501
             if language_model_class is None:
-                language_model_class = cls.get_language_model_class(
-                    pretrained_model_name_or_path
-                )  # noqa: E501
+                language_model_class = cls.get_language_model_class(pretrained_model_name_or_path)  # noqa: E501
 
             if language_model_class:
-                language_model = cls.subclasses[language_model_class].load(
-                    pretrained_model_name_or_path, **kwargs
-                )  # noqa: E501
+                language_model = cls.subclasses[language_model_class].load(pretrained_model_name_or_path, **kwargs)  # noqa: E501
             else:
                 language_model = None
 
@@ -186,18 +178,14 @@ class LanguageModel(nn.Module):
         # resize embeddings in case of custom vocab
         if n_added_tokens != 0:
             # TODO verify for other models than BERT
-            model_emb_size = language_model.model.resize_token_embeddings(
-                new_num_tokens=None
-            ).num_embeddings  # noqa: E501
+            model_emb_size = language_model.model.resize_token_embeddings(new_num_tokens=None).num_embeddings  # noqa: E501
             vocab_size = model_emb_size + n_added_tokens
             logger.info(
                 f"Resizing embedding layer of LM from {model_emb_size} to {vocab_size} to cope with custom vocab."  # noqa: E501
             )  # noqa: E501
             language_model.model.resize_token_embeddings(vocab_size)
             # verify
-            model_emb_size = language_model.model.resize_token_embeddings(
-                new_num_tokens=None
-            ).num_embeddings  # noqa: E501
+            model_emb_size = language_model.model.resize_token_embeddings(new_num_tokens=None).num_embeddings  # noqa: E501
             assert vocab_size == model_emb_size
 
         return language_model
@@ -213,9 +201,7 @@ class LanguageModel(nn.Module):
             language_model_class = "XLMRoberta"
         elif model_type == "roberta":
             if "mlm" in model_name_or_path.lower():
-                raise NotImplementedError(
-                    "MLM part of codebert is currently not supported in FARM"
-                )  # noqa: E501
+                raise NotImplementedError("MLM part of codebert is currently not supported in FARM")  # noqa: E501
             language_model_class = "Roberta"
         elif model_type == "camembert":
             language_model_class = "Camembert"
@@ -235,9 +221,7 @@ class LanguageModel(nn.Module):
             elif config.architectures[0] == "DPRContextEncoder":
                 language_model_class = "DPRContextEncoder"
             elif config.archictectures[0] == "DPRReader":
-                raise NotImplementedError(
-                    "DPRReader models are currently not supported."
-                )  # noqa: E501
+                raise NotImplementedError("DPRReader models are currently not supported.")  # noqa: E501
         elif model_type == "big_bird":
             language_model_class = "BigBird"
         else:
@@ -246,11 +230,7 @@ class LanguageModel(nn.Module):
                 "Could not infer LanguageModel class from config. Trying to infer "  # noqa: E501
                 "LanguageModel class from model name."
             )
-            language_model_class = (
-                LanguageModel._infer_language_model_class_from_string(
-                    model_name_or_path
-                )
-            )  # noqa: E501
+            language_model_class = LanguageModel._infer_language_model_class_from_string(model_name_or_path)  # noqa: E501
 
         return language_model_class
 
@@ -258,10 +238,7 @@ class LanguageModel(nn.Module):
     def _infer_language_model_class_from_string(model_name_or_path):
         # If inferring Language model class from config doesn't succeed,
         # fall back to inferring Language model class from model name.
-        if (
-            "xlm" in model_name_or_path.lower()
-            and "roberta" in model_name_or_path.lower()
-        ):  # noqa: E501
+        if "xlm" in model_name_or_path.lower() and "roberta" in model_name_or_path.lower():  # noqa: E501
             language_model_class = "XLMRoberta"
         elif "bigbird" in model_name_or_path.lower():
             language_model_class = "BigBird"
@@ -269,15 +246,10 @@ class LanguageModel(nn.Module):
             language_model_class = "Roberta"
         elif "codebert" in model_name_or_path.lower():
             if "mlm" in model_name_or_path.lower():
-                raise NotImplementedError(
-                    "MLM part of codebert is currently not supported in FARM"
-                )  # noqa: E501
+                raise NotImplementedError("MLM part of codebert is currently not supported in FARM")  # noqa: E501
             else:
                 language_model_class = "Roberta"
-        elif (
-            "camembert" in model_name_or_path.lower()
-            or "umberto" in model_name_or_path.lower()
-        ):  # noqa: E501
+        elif "camembert" in model_name_or_path.lower() or "umberto" in model_name_or_path.lower():  # noqa: E501
             language_model_class = "Camembert"
         elif "albert" in model_name_or_path.lower():
             language_model_class = "Albert"
@@ -289,10 +261,7 @@ class LanguageModel(nn.Module):
             language_model_class = "XLNet"
         elif "electra" in model_name_or_path.lower():
             language_model_class = "Electra"
-        elif (
-            "word2vec" in model_name_or_path.lower()
-            or "glove" in model_name_or_path.lower()
-        ):  # noqa: E501
+        elif "word2vec" in model_name_or_path.lower() or "glove" in model_name_or_path.lower():  # noqa: E501
             language_model_class = "WordEmbedding_LM"
         elif "minilm" in model_name_or_path.lower():
             language_model_class = "Bert"
@@ -311,9 +280,7 @@ class LanguageModel(nn.Module):
             if odn in dir(config):
                 return getattr(config, odn)
         else:
-            raise Exception(
-                "Could not infer the output dimensions of the language model"
-            )  # noqa: E501
+            raise Exception("Could not infer the output dimensions of the language model")  # noqa: E501
 
     def freeze(self, layers):
         """To be implemented"""
@@ -340,9 +307,7 @@ class LanguageModel(nn.Module):
         """
         # Save Weights
         save_name = Path(save_dir) / "language_model.bin"
-        model_to_save = (
-            self.model.module if hasattr(self.model, "module") else self.model
-        )  # Only save the model it-self
+        model_to_save = self.model.module if hasattr(self.model, "module") else self.model  # Only save the model it-self
         torch.save(model_to_save.state_dict(), save_name)
         self.save_config(save_dir)
 
@@ -368,23 +333,17 @@ class LanguageModel(nn.Module):
         matches = [lang for lang in known_languages if lang in name]
         if "camembert" in name:
             language = "french"
-            logger.info(
-                f"Automatically detected language from language model name: {language}"
-            )
+            logger.info(f"Automatically detected language from language model name: {language}")
         elif "umberto" in name:
             language = "italian"
-            logger.info(
-                f"Automatically detected language from language model name: {language}"
-            )
+            logger.info(f"Automatically detected language from language model name: {language}")
         elif len(matches) == 0:
             language = "english"
         elif len(matches) > 1:
             language = matches[0]
         else:
             language = matches[0]
-            logger.info(
-                f"Automatically detected language from language model name: {language}"
-            )
+            logger.info(f"Automatically detected language from language model name: {language}")
 
         return language
 
@@ -415,9 +374,7 @@ class LanguageModel(nn.Module):
         :return: list of dicts containing preds, e.g. [{"context": "some text", "vec": [-0.01, 0.5 ...]}]
         """  # noqa: E501
 
-        if not hasattr(self, "extraction_layer") or not hasattr(
-            self, "extraction_strategy"
-        ):  # noqa: E501
+        if not hasattr(self, "extraction_layer") or not hasattr(self, "extraction_strategy"):  # noqa: E501
             raise ValueError(
                 "`extraction_layer` or `extraction_strategy` not specified for LM. "  # noqa: E501
                 "Make sure to set both, e.g. via Inferencer(extraction_strategy='cls_token', extraction_layer=-1)`"  # noqa: E501
@@ -436,10 +393,7 @@ class LanguageModel(nn.Module):
             vecs = pooled_output.cpu().numpy()
         elif self.extraction_strategy == "per_token":
             vecs = sequence_output.cpu().numpy()
-        elif (
-            self.extraction_strategy == "reduce_mean"
-            or self.extraction_strategy == "reduce_max"
-        ):  # noqa: E501
+        elif self.extraction_strategy == "reduce_mean" or self.extraction_strategy == "reduce_max":  # noqa: E501
             vecs = self._pool_tokens(
                 sequence_output,
                 padding_mask,
@@ -487,13 +441,9 @@ class LanguageModel(nn.Module):
         ignore_mask_3d = np.zeros(token_vecs.shape, dtype=bool)
         ignore_mask_3d[:, :, :] = ignore_mask_2d[:, :, np.newaxis]
         if strategy == "reduce_max":
-            pooled_vecs = (
-                np.ma.array(data=token_vecs, mask=ignore_mask_3d).max(axis=1).data
-            )  # noqa: E501
+            pooled_vecs = np.ma.array(data=token_vecs, mask=ignore_mask_3d).max(axis=1).data  # noqa: E501
         if strategy == "reduce_mean":
-            pooled_vecs = (
-                np.ma.array(data=token_vecs, mask=ignore_mask_3d).mean(axis=1).data
-            )  # noqa: E501
+            pooled_vecs = np.ma.array(data=token_vecs, mask=ignore_mask_3d).mean(axis=1).data  # noqa: E501
         if strategy == "s3e":
             input_ids = input_ids.cpu().numpy()
             pooled_vecs = s3e_pooling(
@@ -550,25 +500,17 @@ class Bert(LanguageModel):
         else:
             bert.name = pretrained_model_name_or_path
         # We need to differentiate between loading model using FARM format and Pytorch-Transformers format  # noqa: E501
-        farm_lm_config = (
-            Path(pretrained_model_name_or_path) / "language_model_config.json"
-        )  # noqa: E501
+        farm_lm_config = Path(pretrained_model_name_or_path) / "language_model_config.json"  # noqa: E501
         if os.path.exists(farm_lm_config):
             # FARM style
             bert_config = BertConfig.from_pretrained(farm_lm_config)
             farm_lm_model = Path(pretrained_model_name_or_path) / "language_model.bin"
-            bert.model = BertModel.from_pretrained(
-                farm_lm_model, config=bert_config, **kwargs
-            )  # noqa: E501
+            bert.model = BertModel.from_pretrained(farm_lm_model, config=bert_config, **kwargs)  # noqa: E501
             bert.language = bert.model.config.language
         else:
             # Pytorch-transformer Style
-            bert.model = BertModel.from_pretrained(
-                str(pretrained_model_name_or_path), **kwargs
-            )  # noqa: E501
-            bert.language = cls._get_or_infer_language_from_name(
-                language, pretrained_model_name_or_path
-            )  # noqa: E501
+            bert.model = BertModel.from_pretrained(str(pretrained_model_name_or_path), **kwargs)  # noqa: E501
+            bert.language = cls._get_or_infer_language_from_name(language, pretrained_model_name_or_path)  # noqa: E501
         return bert
 
     def forward(
@@ -648,25 +590,17 @@ class Albert(LanguageModel):
         else:
             albert.name = pretrained_model_name_or_path
         # We need to differentiate between loading model using FARM format and Pytorch-Transformers format  # noqa: E501
-        farm_lm_config = (
-            Path(pretrained_model_name_or_path) / "language_model_config.json"
-        )  # noqa: E501
+        farm_lm_config = Path(pretrained_model_name_or_path) / "language_model_config.json"  # noqa: E501
         if os.path.exists(farm_lm_config):
             # FARM style
             config = AlbertConfig.from_pretrained(farm_lm_config)
             farm_lm_model = Path(pretrained_model_name_or_path) / "language_model.bin"
-            albert.model = AlbertModel.from_pretrained(
-                farm_lm_model, config=config, **kwargs
-            )  # noqa: E501
+            albert.model = AlbertModel.from_pretrained(farm_lm_model, config=config, **kwargs)  # noqa: E501
             albert.language = albert.model.config.language
         else:
             # Huggingface transformer Style
-            albert.model = AlbertModel.from_pretrained(
-                str(pretrained_model_name_or_path), **kwargs
-            )  # noqa: E501
-            albert.language = cls._get_or_infer_language_from_name(
-                language, pretrained_model_name_or_path
-            )  # noqa: E501
+            albert.model = AlbertModel.from_pretrained(str(pretrained_model_name_or_path), **kwargs)  # noqa: E501
+            albert.language = cls._get_or_infer_language_from_name(language, pretrained_model_name_or_path)  # noqa: E501
         return albert
 
     def forward(
@@ -747,25 +681,17 @@ class Roberta(LanguageModel):
         else:
             roberta.name = pretrained_model_name_or_path
         # We need to differentiate between loading model using FARM format and Pytorch-Transformers format  # noqa: E501
-        farm_lm_config = (
-            Path(pretrained_model_name_or_path) / "language_model_config.json"
-        )  # noqa: E501
+        farm_lm_config = Path(pretrained_model_name_or_path) / "language_model_config.json"  # noqa: E501
         if os.path.exists(farm_lm_config):
             # FARM style
             config = RobertaConfig.from_pretrained(farm_lm_config)
             farm_lm_model = Path(pretrained_model_name_or_path) / "language_model.bin"
-            roberta.model = RobertaModel.from_pretrained(
-                farm_lm_model, config=config, **kwargs
-            )  # noqa: E501
+            roberta.model = RobertaModel.from_pretrained(farm_lm_model, config=config, **kwargs)  # noqa: E501
             roberta.language = roberta.model.config.language
         else:
             # Huggingface transformer Style
-            roberta.model = RobertaModel.from_pretrained(
-                str(pretrained_model_name_or_path), **kwargs
-            )  # noqa: E501
-            roberta.language = cls._get_or_infer_language_from_name(
-                language, pretrained_model_name_or_path
-            )  # noqa: E501
+            roberta.model = RobertaModel.from_pretrained(str(pretrained_model_name_or_path), **kwargs)  # noqa: E501
+            roberta.language = cls._get_or_infer_language_from_name(language, pretrained_model_name_or_path)  # noqa: E501
         return roberta
 
     def forward(
@@ -846,25 +772,17 @@ class XLMRoberta(LanguageModel):
         else:
             xlm_roberta.name = pretrained_model_name_or_path
         # We need to differentiate between loading model using FARM format and Pytorch-Transformers format  # noqa: E501
-        farm_lm_config = (
-            Path(pretrained_model_name_or_path) / "language_model_config.json"
-        )  # noqa: E501
+        farm_lm_config = Path(pretrained_model_name_or_path) / "language_model_config.json"  # noqa: E501
         if os.path.exists(farm_lm_config):
             # FARM style
             config = XLMRobertaConfig.from_pretrained(farm_lm_config)
             farm_lm_model = Path(pretrained_model_name_or_path) / "language_model.bin"
-            xlm_roberta.model = XLMRobertaModel.from_pretrained(
-                farm_lm_model, config=config, **kwargs
-            )  # noqa: E501
+            xlm_roberta.model = XLMRobertaModel.from_pretrained(farm_lm_model, config=config, **kwargs)  # noqa: E501
             xlm_roberta.language = xlm_roberta.model.config.language
         else:
             # Huggingface transformer Style
-            xlm_roberta.model = XLMRobertaModel.from_pretrained(
-                str(pretrained_model_name_or_path), **kwargs
-            )  # noqa: E501
-            xlm_roberta.language = cls._get_or_infer_language_from_name(
-                language, pretrained_model_name_or_path
-            )  # noqa: E501
+            xlm_roberta.model = XLMRobertaModel.from_pretrained(str(pretrained_model_name_or_path), **kwargs)  # noqa: E501
+            xlm_roberta.language = cls._get_or_infer_language_from_name(language, pretrained_model_name_or_path)  # noqa: E501
         return xlm_roberta
 
     def forward(
@@ -951,25 +869,17 @@ class DistilBert(LanguageModel):
         else:
             distilbert.name = pretrained_model_name_or_path
         # We need to differentiate between loading model using FARM format and Pytorch-Transformers format  # noqa: E501
-        farm_lm_config = (
-            Path(pretrained_model_name_or_path) / "language_model_config.json"
-        )  # noqa: E501
+        farm_lm_config = Path(pretrained_model_name_or_path) / "language_model_config.json"  # noqa: E501
         if os.path.exists(farm_lm_config):
             # FARM style
             config = DistilBertConfig.from_pretrained(farm_lm_config)
             farm_lm_model = Path(pretrained_model_name_or_path) / "language_model.bin"
-            distilbert.model = DistilBertModel.from_pretrained(
-                farm_lm_model, config=config, **kwargs
-            )  # noqa: E501
+            distilbert.model = DistilBertModel.from_pretrained(farm_lm_model, config=config, **kwargs)  # noqa: E501
             distilbert.language = distilbert.model.config.language
         else:
             # Pytorch-transformer Style
-            distilbert.model = DistilBertModel.from_pretrained(
-                str(pretrained_model_name_or_path), **kwargs
-            )  # noqa: E501
-            distilbert.language = cls._get_or_infer_language_from_name(
-                language, pretrained_model_name_or_path
-            )  # noqa: E501
+            distilbert.model = DistilBertModel.from_pretrained(str(pretrained_model_name_or_path), **kwargs)  # noqa: E501
+            distilbert.language = cls._get_or_infer_language_from_name(language, pretrained_model_name_or_path)  # noqa: E501
         config = distilbert.model.config
 
         # DistilBERT does not provide a pooled_output by default. Therefore, we need to initialize an extra pooler.  # noqa: E501
@@ -1053,25 +963,17 @@ class XLNet(LanguageModel):
         else:
             xlnet.name = pretrained_model_name_or_path
         # We need to differentiate between loading model using FARM format and Pytorch-Transformers format  # noqa: E501
-        farm_lm_config = (
-            Path(pretrained_model_name_or_path) / "language_model_config.json"
-        )  # noqa: E501
+        farm_lm_config = Path(pretrained_model_name_or_path) / "language_model_config.json"  # noqa: E501
         if os.path.exists(farm_lm_config):
             # FARM style
             config = XLNetConfig.from_pretrained(farm_lm_config)
             farm_lm_model = Path(pretrained_model_name_or_path) / "language_model.bin"
-            xlnet.model = XLNetModel.from_pretrained(
-                farm_lm_model, config=config, **kwargs
-            )  # noqa: E501
+            xlnet.model = XLNetModel.from_pretrained(farm_lm_model, config=config, **kwargs)  # noqa: E501
             xlnet.language = xlnet.model.config.language
         else:
             # Pytorch-transformer Style
-            xlnet.model = XLNetModel.from_pretrained(
-                str(pretrained_model_name_or_path), **kwargs
-            )  # noqa: E501
-            xlnet.language = cls._get_or_infer_language_from_name(
-                language, pretrained_model_name_or_path
-            )  # noqa: E501
+            xlnet.model = XLNetModel.from_pretrained(str(pretrained_model_name_or_path), **kwargs)  # noqa: E501
+            xlnet.language = cls._get_or_infer_language_from_name(language, pretrained_model_name_or_path)  # noqa: E501
             config = xlnet.model.config
         # XLNet does not provide a pooled_output by default. Therefore, we need to initialize an extra pooler.  # noqa: E501
         # The pooler takes the last hidden representation & feeds it to a dense layer of (hidden_dim x hidden_dim).  # noqa: E501
@@ -1209,9 +1111,7 @@ class EmbeddingModel:
         """  # noqa: E501
         self.config = EmbeddingConfig(**config_dict)
         self.vocab = load_vocab(vocab_file)
-        temp = wordembedding_utils.load_embedding_vectors(
-            embedding_file=embedding_file, vocab=self.vocab
-        )  # noqa: E501
+        temp = wordembedding_utils.load_embedding_vectors(embedding_file=embedding_file, vocab=self.vocab)  # noqa: E501
         self.embeddings = torch.from_numpy(temp).float()
         assert "[UNK]" in self.vocab, "No [UNK] symbol in Wordembeddingmodel! Aborting"
         self.unk_idx = self.vocab["[UNK]"]
@@ -1276,23 +1176,17 @@ class WordEmbedding_LM(LanguageModel):
 
         """  # noqa: E501
         wordembedding_LM = cls()
-        if "farm_lm_name" in kwargs:
+        if "farm_lm_name" in kwargs:  # noqa: SIM401
             wordembedding_LM.name = kwargs["farm_lm_name"]
         else:
             wordembedding_LM.name = pretrained_model_name_or_path
         # We need to differentiate between loading model from local or remote
-        farm_lm_config = (
-            Path(pretrained_model_name_or_path) / "language_model_config.json"
-        )  # noqa: E501
+        farm_lm_config = Path(pretrained_model_name_or_path) / "language_model_config.json"  # noqa: E501
         if os.path.exists(farm_lm_config):
             # local dir
             config = json.load(open(farm_lm_config))  # noqa: SIM115
-            farm_lm_model = (
-                Path(pretrained_model_name_or_path) / config["embeddings_filename"]
-            )  # noqa: E501
-            vocab_filename = (
-                Path(pretrained_model_name_or_path) / config["vocab_filename"]
-            )  # noqa: E501
+            farm_lm_model = Path(pretrained_model_name_or_path) / config["embeddings_filename"]  # noqa: E501
+            vocab_filename = Path(pretrained_model_name_or_path) / config["vocab_filename"]  # noqa: E501
             wordembedding_LM.model = EmbeddingModel(
                 embedding_file=str(farm_lm_model),
                 config_dict=config,
@@ -1301,8 +1195,8 @@ class WordEmbedding_LM(LanguageModel):
             wordembedding_LM.language = config.get("language", None)
         else:
             # from remote or cache
-            config_dict, resolved_vocab_file, resolved_model_file = (
-                wordembedding_utils.load_model(pretrained_model_name_or_path, **kwargs)
+            config_dict, resolved_vocab_file, resolved_model_file = wordembedding_utils.load_model(
+                pretrained_model_name_or_path, **kwargs
             )  # noqa: E501
             model = EmbeddingModel(
                 embedding_file=resolved_model_file,
@@ -1390,9 +1284,7 @@ class WordEmbedding_LM(LanguageModel):
         for k, v in processor.tokenizer.vocab.items():
             processor.tokenizer.ids_to_tokens[v] = k
 
-        logger.info(
-            f"Reduced vocab from {old_num_emb} to {self.model.embeddings.shape[0]}"
-        )  # noqa: E501
+        logger.info(f"Reduced vocab from {old_num_emb} to {self.model.embeddings.shape[0]}")  # noqa: E501
 
     def normalize_embeddings(
         self,
@@ -1434,9 +1326,7 @@ class WordEmbedding_LM(LanguageModel):
         if pca_removal:
             from sklearn.decomposition import PCA
 
-            logger.info(
-                "Removing projections on top PCA components from embeddings (see https://arxiv.org/pdf/1808.06305.pdf)"
-            )  # noqa: E501
+            logger.info("Removing projections on top PCA components from embeddings (see https://arxiv.org/pdf/1808.06305.pdf)")  # noqa: E501
             pca = PCA(n_components=pca_n_components)
             pca.fit(self.model.embeddings.cpu().numpy())
 
@@ -1445,18 +1335,11 @@ class WordEmbedding_LM(LanguageModel):
 
             # Removing projections on top components
             PVN_dims = pca_n_top_components
-            for emb_idx in tqdm(
-                range(self.model.embeddings.shape[0]), desc="Removing projections"
-            ):  # noqa: E501
+            for emb_idx in tqdm(range(self.model.embeddings.shape[0]), desc="Removing projections"):  # noqa: E501
                 for pca_idx, u in enumerate(U1[0:PVN_dims]):
-                    ratio = (
-                        explained_variance[pca_idx] - explained_variance[PVN_dims]
-                    ) / explained_variance[pca_idx]  # noqa: E501
+                    ratio = (explained_variance[pca_idx] - explained_variance[PVN_dims]) / explained_variance[pca_idx]  # noqa: E501
                     self.model.embeddings[emb_idx] = (
-                        self.model.embeddings[emb_idx]
-                        - ratio
-                        * np.dot(u.transpose(), self.model.embeddings[emb_idx])
-                        * u
+                        self.model.embeddings[emb_idx] - ratio * np.dot(u.transpose(), self.model.embeddings[emb_idx]) * u
                     )  # noqa: E501
 
 
@@ -1502,25 +1385,17 @@ class Electra(LanguageModel):
         else:
             electra.name = pretrained_model_name_or_path
         # We need to differentiate between loading model using FARM format and Transformers format  # noqa: E501
-        farm_lm_config = (
-            Path(pretrained_model_name_or_path) / "language_model_config.json"
-        )  # noqa: E501
+        farm_lm_config = Path(pretrained_model_name_or_path) / "language_model_config.json"  # noqa: E501
         if os.path.exists(farm_lm_config):
             # FARM style
             config = ElectraConfig.from_pretrained(farm_lm_config)
             farm_lm_model = Path(pretrained_model_name_or_path) / "language_model.bin"
-            electra.model = ElectraModel.from_pretrained(
-                farm_lm_model, config=config, **kwargs
-            )  # noqa: E501
+            electra.model = ElectraModel.from_pretrained(farm_lm_model, config=config, **kwargs)  # noqa: E501
             electra.language = electra.model.config.language
         else:
             # Transformers Style
-            electra.model = ElectraModel.from_pretrained(
-                str(pretrained_model_name_or_path), **kwargs
-            )  # noqa: E501
-            electra.language = cls._get_or_infer_language_from_name(
-                language, pretrained_model_name_or_path
-            )  # noqa: E501
+            electra.model = ElectraModel.from_pretrained(str(pretrained_model_name_or_path), **kwargs)  # noqa: E501
+            electra.language = cls._get_or_infer_language_from_name(language, pretrained_model_name_or_path)  # noqa: E501
         config = electra.model.config
 
         # ELECTRA does not provide a pooled_output by default. Therefore, we need to initialize an extra pooler.  # noqa: E501
@@ -1608,25 +1483,17 @@ class Camembert(Roberta):
         else:
             camembert.name = pretrained_model_name_or_path
         # We need to differentiate between loading model using FARM format and Pytorch-Transformers format  # noqa: E501
-        farm_lm_config = (
-            Path(pretrained_model_name_or_path) / "language_model_config.json"
-        )  # noqa: E501
+        farm_lm_config = Path(pretrained_model_name_or_path) / "language_model_config.json"  # noqa: E501
         if os.path.exists(farm_lm_config):
             # FARM style
             config = CamembertConfig.from_pretrained(farm_lm_config)
             farm_lm_model = Path(pretrained_model_name_or_path) / "language_model.bin"
-            camembert.model = CamembertModel.from_pretrained(
-                farm_lm_model, config=config, **kwargs
-            )  # noqa: E501
+            camembert.model = CamembertModel.from_pretrained(farm_lm_model, config=config, **kwargs)  # noqa: E501
             camembert.language = camembert.model.config.language
         else:
             # Huggingface transformer Style
-            camembert.model = CamembertModel.from_pretrained(
-                str(pretrained_model_name_or_path), **kwargs
-            )  # noqa: E501
-            camembert.language = cls._get_or_infer_language_from_name(
-                language, pretrained_model_name_or_path
-            )  # noqa: E501
+            camembert.model = CamembertModel.from_pretrained(str(pretrained_model_name_or_path), **kwargs)  # noqa: E501
+            camembert.language = cls._get_or_infer_language_from_name(language, pretrained_model_name_or_path)  # noqa: E501
         return camembert
 
 
@@ -1654,35 +1521,25 @@ class DPRQuestionEncoder(LanguageModel):
         """  # noqa: E501
 
         dpr_question_encoder = cls()
-        if "farm_lm_name" in kwargs:
+        if "farm_lm_name" in kwargs:  # noqa: SIM401
             dpr_question_encoder.name = kwargs["farm_lm_name"]
         else:
             dpr_question_encoder.name = pretrained_model_name_or_path
 
         # We need to differentiate between loading model using FARM format and Pytorch-Transformers format  # noqa: E501
-        farm_lm_config = (
-            Path(pretrained_model_name_or_path) / "language_model_config.json"
-        )  # noqa: E501
+        farm_lm_config = Path(pretrained_model_name_or_path) / "language_model_config.json"  # noqa: E501
         if os.path.exists(farm_lm_config):
             # FARM style
             dpr_config = transformers.DPRConfig.from_pretrained(farm_lm_config)
             farm_lm_model = Path(pretrained_model_name_or_path) / "language_model.bin"
-            dpr_question_encoder.model = (
-                transformers.DPRQuestionEncoder.from_pretrained(
-                    farm_lm_model, config=dpr_config, **kwargs
-                )
-            )  # noqa: E501
+            dpr_question_encoder.model = transformers.DPRQuestionEncoder.from_pretrained(farm_lm_model, config=dpr_config, **kwargs)  # noqa: E501
             dpr_question_encoder.language = dpr_question_encoder.model.config.language
         else:
-            original_model_config = AutoConfig.from_pretrained(
-                pretrained_model_name_or_path
-            )  # noqa: E501
+            original_model_config = AutoConfig.from_pretrained(pretrained_model_name_or_path)  # noqa: E501
             if original_model_config.model_type == "dpr":
                 # "pretrained dpr model": load existing pretrained DPRQuestionEncoder model  # noqa: E501
-                dpr_question_encoder.model = (
-                    transformers.DPRQuestionEncoder.from_pretrained(  # noqa: E501
-                        str(pretrained_model_name_or_path), **kwargs
-                    )
+                dpr_question_encoder.model = transformers.DPRQuestionEncoder.from_pretrained(  # noqa: E501
+                    str(pretrained_model_name_or_path), **kwargs
                 )
             else:
                 # "from scratch": load weights from different architecture (e.g. bert) into DPRQuestionEncoder  # noqa: E501
@@ -1695,17 +1552,11 @@ class DPRQuestionEncoder(LanguageModel):
                     )  # noqa: E501
                 original_config_dict = vars(original_model_config)
                 original_config_dict.update(kwargs)
-                dpr_question_encoder.model = transformers.DPRQuestionEncoder(
-                    config=transformers.DPRConfig(**original_config_dict)
-                )  # noqa: E501
-                dpr_question_encoder.model.base_model.bert_model = (
-                    AutoModel.from_pretrained(  # noqa: E501
-                        str(pretrained_model_name_or_path), **original_config_dict
-                    )
+                dpr_question_encoder.model = transformers.DPRQuestionEncoder(config=transformers.DPRConfig(**original_config_dict))  # noqa: E501
+                dpr_question_encoder.model.base_model.bert_model = AutoModel.from_pretrained(  # noqa: E501
+                    str(pretrained_model_name_or_path), **original_config_dict
                 )
-            dpr_question_encoder.language = cls._get_or_infer_language_from_name(
-                language, pretrained_model_name_or_path
-            )  # noqa: E501
+            dpr_question_encoder.language = cls._get_or_infer_language_from_name(language, pretrained_model_name_or_path)  # noqa: E501
 
         return dpr_question_encoder
 
@@ -1778,33 +1629,25 @@ class DPRContextEncoder(LanguageModel):
         """  # noqa: E501
 
         dpr_context_encoder = cls()
-        if "farm_lm_name" in kwargs:
+        if "farm_lm_name" in kwargs:  # noqa: SIM401
             dpr_context_encoder.name = kwargs["farm_lm_name"]
         else:
             dpr_context_encoder.name = pretrained_model_name_or_path
         # We need to differentiate between loading model using FARM format and Pytorch-Transformers format  # noqa: E501
-        farm_lm_config = (
-            Path(pretrained_model_name_or_path) / "language_model_config.json"
-        )  # noqa: E501
+        farm_lm_config = Path(pretrained_model_name_or_path) / "language_model_config.json"  # noqa: E501
         if os.path.exists(farm_lm_config):
             # FARM style
             dpr_config = transformers.DPRConfig.from_pretrained(farm_lm_config)
             farm_lm_model = Path(pretrained_model_name_or_path) / "language_model.bin"
-            dpr_context_encoder.model = transformers.DPRContextEncoder.from_pretrained(
-                farm_lm_model, config=dpr_config, **kwargs
-            )  # noqa: E501
+            dpr_context_encoder.model = transformers.DPRContextEncoder.from_pretrained(farm_lm_model, config=dpr_config, **kwargs)  # noqa: E501
             dpr_context_encoder.language = dpr_context_encoder.model.config.language
         else:
             # Pytorch-transformer Style
-            original_model_config = AutoConfig.from_pretrained(
-                pretrained_model_name_or_path
-            )  # noqa: E501
+            original_model_config = AutoConfig.from_pretrained(pretrained_model_name_or_path)  # noqa: E501
             if original_model_config.model_type == "dpr":
                 # "pretrained dpr model": load existing pretrained DPRContextEncoder model  # noqa: E501
-                dpr_context_encoder.model = (
-                    transformers.DPRContextEncoder.from_pretrained(  # noqa: E501
-                        str(pretrained_model_name_or_path), **kwargs
-                    )
+                dpr_context_encoder.model = transformers.DPRContextEncoder.from_pretrained(  # noqa: E501
+                    str(pretrained_model_name_or_path), **kwargs
                 )
             else:
                 # "from scratch": load weights from different architecture (e.g. bert) into DPRContextEncoder  # noqa: E501
@@ -1817,17 +1660,11 @@ class DPRContextEncoder(LanguageModel):
                     )  # noqa: E501
                 original_config_dict = vars(original_model_config)
                 original_config_dict.update(kwargs)
-                dpr_context_encoder.model = transformers.DPRContextEncoder(
-                    config=transformers.DPRConfig(**original_config_dict)
+                dpr_context_encoder.model = transformers.DPRContextEncoder(config=transformers.DPRConfig(**original_config_dict))
+                dpr_context_encoder.model.base_model.bert_model = AutoModel.from_pretrained(  # noqa: E501
+                    str(pretrained_model_name_or_path), **original_config_dict
                 )
-                dpr_context_encoder.model.base_model.bert_model = (
-                    AutoModel.from_pretrained(  # noqa: E501
-                        str(pretrained_model_name_or_path), **original_config_dict
-                    )
-                )
-            dpr_context_encoder.language = cls._get_or_infer_language_from_name(
-                language, pretrained_model_name_or_path
-            )  # noqa: E501
+            dpr_context_encoder.language = cls._get_or_infer_language_from_name(language, pretrained_model_name_or_path)  # noqa: E501
 
         return dpr_context_encoder
 
@@ -1921,25 +1758,17 @@ class BigBird(LanguageModel):
         else:
             big_bird.name = pretrained_model_name_or_path
         # We need to differentiate between loading model using FARM format and Pytorch-Transformers format  # noqa: E501
-        farm_lm_config = (
-            Path(pretrained_model_name_or_path) / "language_model_config.json"
-        )  # noqa: E501
+        farm_lm_config = Path(pretrained_model_name_or_path) / "language_model_config.json"  # noqa: E501
         if os.path.exists(farm_lm_config):
             # FARM style
             big_bird_config = BigBirdConfig.from_pretrained(farm_lm_config)
             farm_lm_model = Path(pretrained_model_name_or_path) / "language_model.bin"
-            big_bird.model = BigBirdModel.from_pretrained(
-                farm_lm_model, config=big_bird_config, **kwargs
-            )  # noqa: E501
+            big_bird.model = BigBirdModel.from_pretrained(farm_lm_model, config=big_bird_config, **kwargs)  # noqa: E501
             big_bird.language = big_bird.model.config.language
         else:
             # Pytorch-transformer Style
-            big_bird.model = BigBirdModel.from_pretrained(
-                str(pretrained_model_name_or_path), **kwargs
-            )  # noqa: E501
-            big_bird.language = cls._get_or_infer_language_from_name(
-                language, pretrained_model_name_or_path
-            )  # noqa: E501
+            big_bird.model = BigBirdModel.from_pretrained(str(pretrained_model_name_or_path), **kwargs)  # noqa: E501
+            big_bird.language = cls._get_or_infer_language_from_name(language, pretrained_model_name_or_path)  # noqa: E501
         return big_bird
 
     def forward(
